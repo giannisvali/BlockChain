@@ -1,6 +1,7 @@
 import block
-import wallet
-
+from wallet import Wallet
+from transaction import Transaction
+import requests
 
 class Node:
     def __init__(self, id, ip_address, port, blockchain_snapshot, key_length=2048):
@@ -33,8 +34,8 @@ class Node:
         return public_key, private_key
 
     def generate_wallet(self, key_length):
-        public_key, private_key = generate_keys()
-        return Wallet(public_key, private_key, None, None)
+        public_key, private_key = self.generate_keys(key_length)
+        return Wallet(public_key, private_key, self.ip_address, None)
 
     # create a wallet for this node, with a public key and a private key
 
@@ -43,11 +44,15 @@ class Node:
     # add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
     # bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
 
-    def create_transaction(sender, receiver, signature):
+    def create_transaction(self, receiver, signature, amount):
+        # na doume pws tha dimiourgoume to transaction id kai pws 9a kanoume validation na min einai amnoun < balance
+        transaction_id = 0
+        current_trans = Transaction(self.wallet.get_address, transaction_id, self.wallet.get_transactions(),  self.wallet.get_private_key(), receiver, amount)
+        self.broadcast_transaction(current_trans.transaction_outputs)
 
     # remember to broadcast it
 
-    def broadcast_transaction():
+    def broadcast_transaction(self, message):
 
     def validate_transaction():
 

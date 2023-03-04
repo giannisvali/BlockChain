@@ -21,6 +21,7 @@ class Wallet:
 		self.public_key = public_key
 		self.private_key = private_key
 		self.transactions = transactions
+		self.address = address
 		#self.public_key
 		#self.private_key
 		#self_address
@@ -34,6 +35,11 @@ class Wallet:
 
 	def get_transactions(self):
 		return self.transactions
+
+	def get_address(self):
+		return self.address
+
+
 
 
 	def balance():
