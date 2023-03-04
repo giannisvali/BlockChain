@@ -34,6 +34,8 @@ class Transaction:
         # signature
         self.signature = None
 
+        self.transaction_outputs.append([self.transaction_id, self.receiver_address, self.amount])
+
     def to_dict(self):
         return OrderedDict({'transaction_id': self.transaction_id,
                             'sender_address': self.sender_address,

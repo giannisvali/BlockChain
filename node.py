@@ -49,7 +49,7 @@ class Node:
 
     def broadcast_transaction():
 
-    def validdate_transaction():
+    def validate_transaction():
 
     # use of signature and NBCs balance
 
