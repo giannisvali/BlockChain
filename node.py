@@ -1,5 +1,4 @@
-import block
-import wallet
+from wallet import Wallet
 import main
 from main import *
 import Crypto
@@ -9,7 +8,7 @@ from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 from wallet import *
 import requests
-
+import block
 
 class Node:
     def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, blockchain_snapshot=None,
@@ -62,55 +61,47 @@ class Node:
         return public_key, private_key
 
     def generate_wallet(self, key_length):
-
         public_key, private_key = self.generate_keys(key_length)
-        return Wallet(public_key, private_key, None, None)
+        return Wallet(public_key, private_key, self.ip_address, None)
 
     # create a wallet for this node, with a public key and a private key
 
-# def register_node_to_ring():
-# 	#add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
-# 	#bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
-# 	pass
-#
-# def create_transaction(sender, receiver, signature):
-# 	#remember to broadcast it
-# 	pass
-#
-# def broadcast_transaction():
-# 	pass
-#
-#
-#
-#
-# def validdate_transaction():
-# 	#use of signature and NBCs balance
-# 	pass
-#
-# def add_transaction_to_block():
-# 	#if enough transactions  mine
-# 	pass
-#
-#
-# def mine_block():
-# 	pass
-#
-#
-# def broadcast_block():
-# 	pass
-#
-#
-#
-# def valid_proof(.., difficulty=MINING_DIFFICULTY):
-# 	pass
-#
-#
-#
-# #concencus functions
-#
-# def valid_chain(self, chain):
-# 	#check for the longer chain accroose all nodes
-#
-#
-# def resolve_conflicts(self):
-# 	#resolve correct chain
+    # create a wallet for this node, with a public key and a private key
+
+    def register_node_to_ring():
+
+    # add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
+    # bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
+
+    def create_transaction(self, receiver, signature, amount):
+        # na doume pws tha dimiourgoume to transaction id kai pws 9a kanoume validation na min einai amnoun < balance
+        transaction_id = 0
+        current_trans = Transaction(self.wallet.get_address, transaction_id, self.wallet.get_transactions(),  self.wallet.get_private_key(), receiver, amount)
+        self.broadcast_transaction(current_trans.transaction_outputs)
+
+    # remember to broadcast it
+
+    def broadcast_transaction(self, message):
+
+    def validate_transaction():
+
+    # use of signature and NBCs balance
+
+    def add_transaction_to_block():
+
+    # if enough transactions  mine
+
+    def mine_block():
+
+    def broadcast_block():
+
+    def valid_proof(.., difficulty=MINING_DIFFICULTY):
+
+    # concencus functions
+
+    def valid_chain(self, chain):
+
+    # check for the longer chain accroose all nodes
+
+    def resolve_conflicts(self):
+# resolve correct chain
