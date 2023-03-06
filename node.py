@@ -1,19 +1,39 @@
-import block
 from wallet import Wallet
-from transaction import Transaction
+import main
+from main import *
+import Crypto
+from Crypto import Random
+from Crypto.Hash import SHA
+from Crypto.PublicKey import RSA
+from Crypto.Signature import PKCS1_v1_5
+from wallet import *
 import requests
+import block
 
 class Node:
-    def __init__(self, id, ip_address, port, blockchain_snapshot, key_length=2048):
+    def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, blockchain_snapshot=None,
+                 key_length=2048):
         self.NBC = 100
-        self.id = id
+        # self.id = self.get_node_id()
+        if (ip_address == bootstrap_ip_address):
+            self.id = 0
+            print(self.id)
+        else:
+            bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
+            response = requests.get(bootstrap_node_url + '/node-id')
+            response_dict = response.json()
+            # response_dict = json.loads(response_json)
+            print(response_dict['node_id'])
+            self.id = response_dict['node_id']
+
         self.ip_address = ip_address
         self.port = port
 
         self.wallet = self.generate_wallet(key_length)
-        ##set
 
-        if (self.id == 0):
+    ##set
+
+    # if(self.id == 0):
 
     # self.chain
     # self.current_id_count
@@ -21,6 +41,13 @@ class Node:
     # self.wallet
 
     # slef.ring[]   #here we store information for every node, as its id, its address (ip:port) its public key and its balance
+
+    # @staticmethod
+    # @app.route('/node-id')
+    # def get_node_id():
+    # 	node_id = app.config['node_id'] #app.config.get('NEXT_NODE_ID', 0)
+    # 	app.config['node_id'] = node_id + 1
+    # 	return str(node_id)
 
     def create_new_block(self):
         return
@@ -36,6 +63,8 @@ class Node:
     def generate_wallet(self, key_length):
         public_key, private_key = self.generate_keys(key_length)
         return Wallet(public_key, private_key, self.ip_address, None)
+
+    # create a wallet for this node, with a public key and a private key
 
     # create a wallet for this node, with a public key and a private key
 
@@ -76,6 +105,3 @@ class Node:
 
     def resolve_conflicts(self):
 # resolve correct chain
-
-
-
