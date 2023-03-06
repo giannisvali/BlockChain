@@ -20,7 +20,8 @@ class Wallet:
 		##set
 		self.public_key = public_key
 		self.private_key = private_key
-		self.transactions = transactions
+		#self.transactions = transactions
+		self.transactions = []  #[tuple1(-1 or 1, id, money), ...., ]
 		self.address = address
 		#self.public_key
 		#self.private_key
@@ -39,8 +40,11 @@ class Wallet:
 	def get_address(self):
 		return self.address
 
+	def balance(self):
+		cur_balance = 0
+		for operation, _, money in self.transactions:
+			cur_balance+=operation*money
 
+		return cur_balance
 
-
-	def balance():
 

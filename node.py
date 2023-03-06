@@ -1,6 +1,5 @@
 from wallet import Wallet
 import main
-from main import *
 import Crypto
 from Crypto import Random
 from Crypto.Hash import SHA
@@ -9,16 +8,25 @@ from Crypto.Signature import PKCS1_v1_5
 from wallet import *
 import requests
 import block
-
+from transaction import *
 class Node:
-    def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, blockchain_snapshot=None,
+    def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, blockchain_snapshot=None,
                  key_length=2048):
-        self.NBC = 100
+
+        self.ip_address = ip_address
+        self.port = port
+
+        self.wallet = self.generate_wallet(key_length)
+
         # self.id = self.get_node_id()
-        if (ip_address == bootstrap_ip_address):
+        if ip_address == bootstrap_ip_address:
+            self.NBC = 100*no_nodes
             self.id = 0
+            self.transaction_id = 0
+            self.UTXO = [(self.transaction_id, self.wallet.get_public_key(), self.NBC)]
             print(self.id)
         else:
+            self.NBC = 0
             bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
             response = requests.get(bootstrap_node_url + '/node-id')
             response_dict = response.json()
@@ -26,10 +34,7 @@ class Node:
             print(response_dict['node_id'])
             self.id = response_dict['node_id']
 
-        self.ip_address = ip_address
-        self.port = port
 
-        self.wallet = self.generate_wallet(key_length)
 
     ##set
 
@@ -76,8 +81,12 @@ class Node:
     def create_transaction(self, receiver, signature, amount):
         # na doume pws tha dimiourgoume to transaction id kai pws 9a kanoume validation na min einai amnoun < balance
         transaction_id = 0
-        current_trans = Transaction(self.wallet.get_address, transaction_id, self.wallet.get_transactions(),  self.wallet.get_private_key(), receiver, amount)
-        self.broadcast_transaction(current_trans.transaction_outputs)
+        if self.wallet.balance()<amount:
+            print("Node" + self.id + ": could not make transaction, not enough money! xypna mlk")
+        else:
+            current_trans = Transaction(self.wallet.get_address, transaction_id, self.wallet.get_transactions(),  self.wallet.get_private_key(), receiver, amount)
+            #enhmerwtiko mhnyma !!!!!!!!!
+            self.broadcast_transaction(current_trans.transaction_outputs)
 
     # remember to broadcast it
 
