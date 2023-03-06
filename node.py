@@ -1,76 +1,118 @@
 import block
 import wallet
-
-
+import main
+from main import *
+import Crypto
+from Crypto import Random
+from Crypto.Hash import SHA
+from Crypto.PublicKey import RSA
+from Crypto.Signature import PKCS1_v1_5
+from wallet import *
+import requests
 class Node:
-    def __init__(self, id, ip_address, port, blockchain_snapshot, key_length=2048):
-        self.NBC = 100
-        self.id = id
-        self.ip_address = ip_address
-        self.port = port
+	def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, blockchain_snapshot = None, key_length = 2048):
+		self.NBC=100
+		#self.id = self.get_node_id()
+		if(ip_address == bootstrap_ip_address):
+			self.id = 0
+			print(self.id)
+		else:
+			bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
+			response = requests.get(bootstrap_node_url + '/node-id')
+			response_dict = response.json()
+			#response_dict = json.loads(response_json)
+			print(response_dict['node_id'])
+			self.id = response_dict['node_id']
 
-        self.wallet = self.generate_wallet(key_length)
-        ##set
+		self.ip_address = ip_address
+		self.port = port
 
-        if (self.id == 0):
+		self.wallet = self.generate_wallet(key_length)
+		##set
 
-    # self.chain
-    # self.current_id_count
-    # self.NBCs
-    # self.wallet
+		#if(self.id == 0):
 
-    # slef.ring[]   #here we store information for every node, as its id, its address (ip:port) its public key and its balance
 
-    def create_new_block(self):
-        return
+		#self.chain
+		#self.current_id_count
+		#self.NBCs
+		#self.wallet
 
-    def generate_keys(self, key_length):
-        random_generator = Random.new().read
-        key = RSA.generate(key_length, random_generator)
-        private_key = key.export_key()
-        public_key = key.publickey().export_key()
+		#slef.ring[]   #here we store information for every node, as its id, its address (ip:port) its public key and its balance
 
-        return public_key, private_key
+	# @staticmethod
+	# @app.route('/node-id')
+	# def get_node_id():
+	# 	node_id = app.config['node_id'] #app.config.get('NEXT_NODE_ID', 0)
+	# 	app.config['node_id'] = node_id + 1
+	# 	return str(node_id)
 
-    def generate_wallet(self, key_length):
-        public_key, private_key = generate_keys()
-        return Wallet(public_key, private_key, None, None)
 
-    # create a wallet for this node, with a public key and a private key
 
-    def register_node_to_ring():
+	def create_new_block(self):
+		return
 
-    # add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
-    # bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
+	def generate_keys(self, key_length):
+		random_generator = Random.new().read
+		key = RSA.generate(key_length, random_generator)
+		private_key = key.export_key()
+		public_key = key.publickey().export_key()
 
-    def create_transaction(sender, receiver, signature):
+		return public_key, private_key
 
-    # remember to broadcast it
+	def generate_wallet(self, key_length):
 
-    def broadcast_transaction():
+		public_key, private_key = self.generate_keys(key_length)
+		return Wallet(public_key, private_key, None, None)
 
-    def validdate_transaction():
+		#create a wallet for this node, with a public key and a private key
 
-    # use of signature and NBCs balance
-
-    def add_transaction_to_block():
-
-    # if enough transactions  mine
-
-    def mine_block():
-
-    def broadcast_block():
-
-    def valid_proof(.., difficulty=MINING_DIFFICULTY):
-
-    # concencus functions
-
-    def valid_chain(self, chain):
-
-    # check for the longer chain accroose all nodes
-
-    def resolve_conflicts(self):
-# resolve correct chain
+	# def register_node_to_ring():
+	# 	#add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
+	# 	#bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
+	# 	pass
+	#
+	# def create_transaction(sender, receiver, signature):
+	# 	#remember to broadcast it
+	# 	pass
+	#
+	# def broadcast_transaction():
+	# 	pass
+	#
+	#
+	#
+	#
+	# def validdate_transaction():
+	# 	#use of signature and NBCs balance
+	# 	pass
+	#
+	# def add_transaction_to_block():
+	# 	#if enough transactions  mine
+	# 	pass
+	#
+	#
+	# def mine_block():
+	# 	pass
+	#
+	#
+	# def broadcast_block():
+	# 	pass
+	#
+	#
+	#
+	# def valid_proof(.., difficulty=MINING_DIFFICULTY):
+	# 	pass
+	#
+	#
+	#
+	# #concencus functions
+	#
+	# def valid_chain(self, chain):
+	# 	#check for the longer chain accroose all nodes
+	#
+	#
+	# def resolve_conflicts(self):
+	# 	#resolve correct chain
 
 
 
