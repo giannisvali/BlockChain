@@ -15,12 +15,12 @@ app.config['node_id'] = 0
 #         raise argparse.ArgumentTypeError("%s is not a positive integer" % value)
 #     return ivalue
 
-@app.route('/node-id')
-def get_node_id():
-    node_id = app.config['node_id']  # app.config.get('NEXT_NODE_ID', 0)
-    app.config['node_id'] = node_id + 1
-    response = jsonify({"node_id": node_id})
-    return response
+# @app.route('/node-id')
+# def get_node_id():
+#     node_id = app.config['node_id']  # app.config.get('NEXT_NODE_ID', 0)
+#     app.config['node_id'] = node_id + 1
+#     response = jsonify({"node_id": node_id})
+#     return response
     #return str(node_id)
 
 
