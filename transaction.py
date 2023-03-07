@@ -16,6 +16,7 @@ class Transaction:
 
     def __init__(self, sender_address, transaction_id,
                  transaction_input, transaction_output, sender_private_key, recipient_address, value):
+
         # set
         # self.sender_address: #To public key του wallet από το οποίο προέρχονται τα χρήματα
         self.sender_address = sender_address
@@ -34,7 +35,6 @@ class Transaction:
         self.sender_private_key = sender_private_key
         # signature
         self.signature = None
-
 
         # amount_left = self.amount
         # change = 0
@@ -57,6 +57,7 @@ class Transaction:
         #                                     (self.transaction_id, self.sender_address, change)]
         #     else:
         #         self.transaction_outputs = [(self.transaction_id, self.receiver_address, self.amount)]
+
 
         self.signature = self.sign_transaction()
 

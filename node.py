@@ -15,6 +15,7 @@ class Node:
 
         self.ip_address = ip_address
         self.port = port
+
         self.bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
         self.wallet = self.generate_wallet(key_length)
 
@@ -98,7 +99,6 @@ class Node:
 
     def create_transaction(self, receiver_address, signature, amount):
         # na doume pws tha dimiourgoume to transaction id kai pws 9a kanoume validation na min einai amnoun < balance
-
         #bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
         response = requests.get(self.bootstrap_node_url + '/transaction-id')
         response_dict = response.json()

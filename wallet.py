@@ -20,7 +20,8 @@ class Wallet:
 		##set
 		self.public_key = public_key
 		self.private_key = private_key
-		self.transactions = transactions
+		#self.transactions = transactions
+		self.transactions = []  #[tuple1(-1 or 1, id, money), ...., ]
 		self.address = address
 		self.UTXOs = dict()
 
@@ -46,7 +47,7 @@ class Wallet:
 
 	def get_address(self):
 		return self.address
-
+  
 	def get_UTXOs(self):
 		return self.UTXOs
 
