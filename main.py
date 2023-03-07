@@ -7,7 +7,8 @@ from flask import jsonify
 
 app = Flask(__name__)
 CORS(app)
-app.config['node_id'] = 0
+app.config['node_id'] = 1
+app.config['transaction_id'] = 1
 
 # def positive_int(value):
 #     ivalue = int(value)
@@ -15,20 +16,28 @@ app.config['node_id'] = 0
 #         raise argparse.ArgumentTypeError("%s is not a positive integer" % value)
 #     return ivalue
 
-# @app.route('/node-id')
-# def get_node_id():
-#     node_id = app.config['node_id']  # app.config.get('NEXT_NODE_ID', 0)
-#     app.config['node_id'] = node_id + 1
-#     response = jsonify({"node_id": node_id})
-#     return response
-    #return str(node_id)
+@app.route('/node-id')
+def get_node_id():
+    node_id = app.config['node_id']  # app.config.get('NEXT_NODE_ID', 0)
+    app.config['node_id'] = node_id + 1
+    response = jsonify({"node_id": node_id})
+    return response
+    # return str(node_id)
+
+
+@app.route('/transaction-id')
+def get_transaction_id():
+    transaction_id = app.config['transaction_id']  # app.config.get('NEXT_NODE_ID', 0)
+    app.config['transaction_id'] = transaction_id + 1
+    response = jsonify({"transaction_id": transaction_id})
+    return response
 
 
 if __name__ == '__main__':
     # app.run(debug=True)
 
     parser = ArgumentParser()
-    parser.add_argument('--ip', default='127.0.0.1', type = str)
+    parser.add_argument('--ip', default='127.0.0.1', type=str)
     parser.add_argument('--port', default='5000', type=str)
     parser.add_argument('--bootstrap_ip', default='127.0.0.1', type=str)
     parser.add_argument('--bootstrap_port', default='5000', type=str)
@@ -36,6 +45,7 @@ if __name__ == '__main__':
     # parser.add_argument('--capacity', default=5000, type=positive_int)
     parser.add_argument('--capacity', default='5000', type=int)
     parser.add_argument('--difficulty', default=3, type=int)
+    parser.add_argument('--no_nodes', default=3, type=int)
 
     args = parser.parse_args()
     if args.capacity <= 0:
@@ -48,11 +58,11 @@ if __name__ == '__main__':
     is_bootstrap = args.is_bootstrap
     capacity = args.capacity
     difficulty = args.difficulty
+    no_nodes = args.no_nodes
 
+    node = Node(ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, blockchain_snapshot=None,
+                key_length=2048)
+    app.run(host='0.0.0.0', port=5000, debug=True)
 
-
-    node = Node(ip_address, port, bootstrap_ip_address, bootstrap_port, blockchain_snapshot = None, key_length = 2048)
-    app.run(host='0.0.0.0', port=5000, debug = True )
-
-#node = Node()
-#app.config['node'] = node
+# node = Node()
+# app.config['node'] = node
