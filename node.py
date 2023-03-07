@@ -1,14 +1,21 @@
 from wallet import Wallet
 import main
 import Crypto
+from flask_cors import CORS
+from flask import jsonify
 from Crypto import Random
-from Crypto.Hash import SHA
+from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 from wallet import *
 import requests
 import block
 from transaction import *
+from flask_cors import CORS
+from flask import jsonify
+app = Flask(__name__)
+CORS(app)
+
 class Node:
     def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, blockchain_snapshot=None,
                  key_length=2048):
@@ -75,10 +82,17 @@ class Node:
 
     # create a wallet for this node, with a public key and a private key
 
-    def register_node_to_ring(self):
-        pass
+    def register_node_to_ring(self, message):
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # thelei ilopoisi
+        return self.wallet.get_public_key()
     # add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
-    # bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
+    # botstrap node informs all other nodes and gives the request node an id and 100 NBCs
 
     def create_transaction_input(self, UTXOs, wallet_public_key, amount):
         amount_left = amount
@@ -107,7 +121,7 @@ class Node:
         transaction_id = response_dict['transaction_id']
 
         if self.wallet.balance()<amount:
-            print("Node" + self.id + ": could not make transaction, not enough money! xypna mlk")
+            print("Node" + self.id + ": could not make transaction, not enough money!")
         else:
             transaction_input, change  = self.create_transaction_input(self.wallet.get_UTXOs(), self.wallet.get_public_key(), amount)
             if len(transaction_input)==0:
@@ -125,16 +139,64 @@ class Node:
 
             current_trans = Transaction(self.wallet.get_public_key(), transaction_id, transaction_input, transaction_output, self.wallet.get_private_key(), receiver_address, amount)
             #enhmerwtiko mhnyma !!!!!!!!!
-            self.broadcast_transaction(current_trans.transaction_output )
+            if self.broadcast_transaction(current_trans.to_dict()):
+                print("Validate transaction make new UTXOS for that transaction")
+            else:
+                print("Not validate transaction!1!!")
 
     # remember to broadcast it
 
 
-    def broadcast_transaction(self, message):
+    def broadcast_transaction(self, trans_dict):
+        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun oloi
+        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun oloi
+        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun oloi
+        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun oloi
+        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun oloi
+        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun oloi
+        # to transacrion
+        ring_nodes = self.register_node_to_ring()
+        for i in ring_nodes:
+            response = requests.get(i + '/get-transaction-id',json=trans_dict)
+            response_dict = response.json()
+            if not response_dict["approve"]:
+                print("Not validate!! Node with public key" + response_dict["public_key"] + " has problem!")
+                return False
 
-    def validate_transaction():
+        return True
 
-    # use of signature and NBCs balance
+
+    def verify_signature(self, signature, sender_address, recipient_address, value):
+        transaction_data = str(sender_address) + str(recipient_address) + str(value)
+        transaction_hash = SHA256.new(transaction_data.encode())
+        public_key = RSA.importKey(binascii.unhexlify(sender_address))
+        verifier = PKCS1_v1_5.new(public_key)
+        signature = binascii.unhexlify(signature)
+        return verifier.verify(transaction_hash, signature)
+
+    @app.route('/get-transaction-id')
+    def validate_transaction(self):
+        trans = request.get_json()
+        validate_sign = self.verify_signature(trans["signature"], trans["sender_address"], trans["recipient_address"], trans["value"])
+        if validate_sign:
+
+            if set(trans["transaction_inputs"]).intersection(self.wallet.get_UTXOs()) == set(trans["transaction_inputs"]):
+            # thelpoume enimerosi tou UTXOS edq
+            # thelpoume enimerosi tou UTXOS edq
+            # thelpoume enimerosi tou UTXOS edq
+            # thelpoume enimerosi tou UTXOS edq
+            # thelpoume enimerosi tou UTXOS edq
+            # thelpoume enimerosi tou UTXOS edq
+            # thelpoume enimerosi tou UTXOS edq
+                print("Validate transaction!!!")
+                response = jsonify({"public_key" : self.wallet.get_public_key() , "approve" : True})
+            else:
+                print("Not validate amount for the transaction!!Scammer find!")
+                response = jsonify({"public_key": self.wallet.get_public_key(), "approve": False})
+        else:
+            print("Not validate sign on the transaction!!Scammer find!")
+            response = jsonify({"public_key" : self.wallet.get_public_key() , "approve" : False})
+        return response
 
     def add_transaction_to_block():
 

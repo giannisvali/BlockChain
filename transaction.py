@@ -58,7 +58,6 @@ class Transaction:
         #     else:
         #         self.transaction_outputs = [(self.transaction_id, self.receiver_address, self.amount)]
 
-
         self.signature = self.sign_transaction()
 
     def to_dict(self):
@@ -66,7 +65,7 @@ class Transaction:
                             'sender_address': self.sender_address,
                             'recipient_address': self.receiver_address,
                             'transaction_inputs': self.transaction_inputs,
-                            'transaction_outputs': self.transaction_outputs,
+                            'transaction_outputs': self.transaction_output,
                             'value': self.amount,
                             'signature': self.signature})
 
