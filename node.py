@@ -16,6 +16,7 @@ class Node:
         self.ip_address = ip_address
         self.port = port
 
+        self.bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
         self.wallet = self.generate_wallet(key_length)
 
         # self.id = self.get_node_id()
@@ -23,12 +24,13 @@ class Node:
             self.NBC = 100*no_nodes
             self.id = 0
             self.transaction_id = 0
-            self.UTXO = [(self.transaction_id, self.wallet.get_public_key(), self.NBC)]
+            self.wallet.add_UTXO(self.wallet.get_public_key(), self.transaction_id, self.NBC)
+            #self.UTXO = [(self.transaction_id, self.wallet.get_public_key(), self.NBC)]
             print(self.id)
         else:
             self.NBC = 0
-            bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
-            response = requests.get(bootstrap_node_url + '/node-id')
+            #bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
+            response = requests.get(self.bootstrap_node_url + '/node-id')
             response_dict = response.json()
             # response_dict = json.loads(response_json)
             print(response_dict['node_id'])
@@ -73,22 +75,60 @@ class Node:
 
     # create a wallet for this node, with a public key and a private key
 
-    def register_node_to_ring():
-
+    def register_node_to_ring(self):
+        pass
     # add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
     # bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
 
-    def create_transaction(self, receiver, signature, amount):
+    def create_transaction_input(self, UTXOs, wallet_public_key, amount):
+        amount_left = amount
+        change = 0
+        cur_node_UTXOs = UTXOs[wallet_public_key]
+        transaction_input = []
+        for tr_id, NBC in cur_node_UTXOs:
+            amount_left -= NBC
+            transaction_input.append((tr_id, NBC))
+            if amount_left - NBC <= 0:
+                change = NBC - amount_left
+                break
+
+        if amount_left > 0:
+            return [], 0
+
+        return transaction_input, change
+
+    def create_transaction(self, receiver_address, signature, amount):
         # na doume pws tha dimiourgoume to transaction id kai pws 9a kanoume validation na min einai amnoun < balance
-        transaction_id = 0
+        #bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
+        response = requests.get(self.bootstrap_node_url + '/transaction-id')
+        response_dict = response.json()
+        # response_dict = json.loads(response_json)
+        print(response_dict['node_id'])
+        transaction_id = response_dict['transaction_id']
+
         if self.wallet.balance()<amount:
             print("Node" + self.id + ": could not make transaction, not enough money! xypna mlk")
         else:
-            current_trans = Transaction(self.wallet.get_address, transaction_id, self.wallet.get_transactions(),  self.wallet.get_private_key(), receiver, amount)
+            transaction_input, change  = self.create_transaction_input(self.wallet.get_UTXOs(), self.wallet.get_public_key(), amount)
+            if len(transaction_input)==0:
+                print("Not enough money for the transaction!")
+                return None
+
+            print("Node with wallet public key:", receiver_address, "will receive ", amount, "NBC")
+            print("Node with wallet public key:", self.wallet.get_public_key(), "will have ", change,
+                  "NBC left in that transaction")
+            if change != 0:
+                transaction_output = [(transaction_id, receiver_address, amount),
+                                            (transaction_id, self.wallet.get_public_key(), change)]
+            else:
+                transaction_output = [(transaction_id, receiver_address, amount)]
+
+            current_trans = Transaction(self.wallet.get_public_key(), transaction_id, transaction_input, transaction_output, self.wallet.get_private_key(), receiver_address, amount)
             #enhmerwtiko mhnyma !!!!!!!!!
-            self.broadcast_transaction(current_trans.transaction_outputs)
+            self.broadcast_transaction(current_trans.transaction_output )
 
     # remember to broadcast it
+
 
     def broadcast_transaction(self, message):
 
