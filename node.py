@@ -41,12 +41,6 @@ class Node:
             #bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
             self.id,b,c = self.insert_into_network()
 
-            thread()
-
-
-def wait_for_details()
-
-    while(1):
 
     ##set
 
@@ -66,8 +60,8 @@ def wait_for_details()
     # 	app.config['node_id'] = node_id + 1
     # 	return str(node_id)
 
-    def create_new_block(self):
-        return
+    # def create_new_block(self):
+    #     return
 
     def generate_keys(self, key_length):
         random_generator = Random.new().read
