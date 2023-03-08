@@ -29,7 +29,6 @@ class Transaction:
         # self.transaction_inputs: λίστα από Transaction Input
         self.transaction_inputs = transaction_input  # transaction_inputs
         # self.transaction_outputs: λίστα από Transaction Output
-        self.transaction_output = []
         self.transaction_output = transaction_output
         # private_key
         self.sender_private_key = sender_private_key

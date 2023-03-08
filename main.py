@@ -78,6 +78,6 @@ if __name__ == '__main__':
     node = Node(ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, blockchain_snapshot=None,
                 key_length=2048)
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-#node = Node()
-#app.config['node'] = node
+#
+# node = Node()
+# app.config['node'] = node
