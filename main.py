@@ -9,7 +9,8 @@ app = Flask(__name__)
 CORS(app)
 app.config['node_id'] = 1
 app.config['transaction_id'] = 1
-
+app.config['nodes_details'] = dict()
+app.config
 # def positive_int(value):
 #     ivalue = int(value)
 #     if ivalue <= 0:
@@ -34,6 +35,19 @@ def get_transaction_id():
     return response
 
 
+
+def update_nodes_details(details):
+    app.config['nodes_details'][details['id']] = (details['wallet_public_key'], details['ip_address'], details['port'])
+
+@app.route('/receive-details')
+def receive_data():
+    details = request.json
+    print("Node details:", details)
+    update_nodes_details(details)
+
+    return jsonify({'status': 'success'})
+
+ 
 if __name__ == '__main__':
     # app.run(debug=True)
 
