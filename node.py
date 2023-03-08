@@ -133,18 +133,18 @@ class Node:
 
     def create_transaction(self, receiver_address, signature, amount):
         # na doume pws tha dimiourgoume to transaction id kai pws 9a kanoume validation na min einai amnoun < balance
-        #bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
+        # bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
         response = requests.get(self.bootstrap_node_url + '/transaction-id')
         response_dict = response.json()
         # response_dict = json.loads(response_json)
         print(response_dict['node_id'])
         transaction_id = response_dict['transaction_id']
 
-        if self.wallet.balance()<amount:
+        if self.wallet.balance() < amount:
             print("Node" + self.id + ": could not make transaction, not enough money!")
         else:
-            transaction_input, change  = self.create_transaction_input(self.wallet.get_UTXOs(), self.wallet.get_public_key(), amount)
-            if len(transaction_input)==0:
+            transaction_input, change = self.create_transaction_input(self.wallet.get_UTXOs(), self.wallet.get_public_key(), amount)
+            if len(transaction_input) == 0:
                 print("Not enough money for the transaction!")
                 return None
 
@@ -159,7 +159,7 @@ class Node:
                 transaction_output = [(transaction_id, receiver_address, amount)]
 
             current_trans = Transaction(self.wallet.get_public_key(), transaction_id, transaction_input, transaction_output, self.wallet.get_private_key(), receiver_address, amount)
-            #enhmerwtiko mhnyma !!!!!!!!!
+            # enhmerwtiko mhnyma !!!!!!!!!
             if self.broadcast_transaction(current_trans.to_dict()):
                 print("Validate transaction make new UTXOS for that transaction")
             else:
@@ -167,14 +167,13 @@ class Node:
 
     # remember to broadcast it
 
-
     def broadcast_transaction(self, trans_dict):
-        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun oloi
-        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun oloi
-        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun oloi
-        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun oloi
-        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun oloi
-        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun oloi
+        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun olo
+        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun oli
+        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun ooi
+        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun loi
+        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavounoloi
+        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavou oloi
         # to transacrion
         ring_nodes = self.register_node_to_ring()
         for i in ring_nodes:
@@ -185,7 +184,6 @@ class Node:
                 return False
 
         return True
-
 
     def verify_signature(self, signature, sender_address, recipient_address, value):
         transaction_data = str(sender_address) + str(recipient_address) + str(value)
@@ -200,40 +198,33 @@ class Node:
         trans = request.get_json()
         validate_sign = self.verify_signature(trans["signature"], trans["sender_address"], trans["recipient_address"], trans["value"])
         if validate_sign:
-
-            if set(trans["transaction_inputs"]).intersection(self.wallet.get_UTXOs()) == set(trans["transaction_inputs"]):
-            # thelpoume enimerosi tou UTXOS edq
-            # thelpoume enimerosi tou UTXOS edq
-            # thelpoume enimerosi tou UTXOS edq
-            # thelpoume enimerosi tou UTXOS edq
-            # thelpoume enimerosi tou UTXOS edq
-            # thelpoume enimerosi tou UTXOS edq
-            # thelpoume enimerosi tou UTXOS edq
+            if set(trans["transaction_inputs"]).intersection(self.wallet.get_UTXOs()[trans["sender_address"]]) == set(trans["transaction_inputs"]):
+                self.wallet.update_utxo(trans["sender_address"], trans["transaction_inputs"], trans["transaction_outputs"])
                 print("Validate transaction!!!")
-                response = jsonify({"public_key" : self.wallet.get_public_key() , "approve" : True})
+                response = jsonify({"public_key": self.wallet.get_public_key(), "approve": True})
             else:
                 print("Not validate amount for the transaction!!Scammer find!")
                 response = jsonify({"public_key": self.wallet.get_public_key(), "approve": False})
         else:
             print("Not validate sign on the transaction!!Scammer find!")
-            response = jsonify({"public_key" : self.wallet.get_public_key() , "approve" : False})
+            response = jsonify({"public_key": self.wallet.get_public_key(), "approve":  False})
         return response
 
-    def add_transaction_to_block():
-
-    # if enough transactions  mine
-
-    def mine_block():
-
-    def broadcast_block():
-
-    def valid_proof(.., difficulty=MINING_DIFFICULTY):
-
-    # concencus functions
-
-    def valid_chain(self, chain):
-
-    # check for the longer chain accroose all nodes
-
-    def resolve_conflicts(self):
-# resolve correct chain
+#     def add_transaction_to_block():
+#
+#     # if enough transactions  mine
+#
+#     def mine_block():
+#
+#     def broadcast_block():
+#
+#     def valid_proof(.., difficulty=MINING_DIFFICULTY):
+#
+#     # concencus functions
+#
+#     def valid_chain(self, chain):
+#
+#     # check for the longer chain accroose all nodes
+#
+#     def resolve_conflicts(self):
+# # resolve correct chain

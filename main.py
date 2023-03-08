@@ -10,7 +10,7 @@ CORS(app)
 app.config['node_id'] = 1
 app.config['transaction_id'] = 1
 app.config['nodes_details'] = dict()
-app.config
+app.config[]
 # def positive_int(value):
 #     ivalue = int(value)
 #     if ivalue <= 0:
