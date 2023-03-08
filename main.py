@@ -4,13 +4,14 @@ from argparse import ArgumentParser
 from node import *
 from flask_cors import CORS
 from flask import jsonify
+import threading
 
 app = Flask(__name__)
 CORS(app)
 app.config['node_id'] = 1
 app.config['transaction_id'] = 1
 app.config['nodes_details'] = dict()
-app.config[]
+app.config['node_counter'] = 1
 # def positive_int(value):
 #     ivalue = int(value)
 #     if ivalue <= 0:
@@ -35,15 +36,49 @@ def get_transaction_id():
     return response
 
 
+@app.route('/receive-network', method = ['POST'])
+def receive_network():
+    all_details = request.json
+    app.config['nodes_details'] = all_details
+    return jsonify({'status': 'success'})
+
+
+def send_details_to_nodes(rest_nodes_details, node_id, cur_node_details):
+    wallet_public_key, ip_address, port = cur_node_details
+    node_url = 'http://' + ip_address + ":" + port
+
+    response = requests.post(node_url + '/receive-network', json=rest_nodes_details)
+    #to node_id mhpws axrhsto alla to ebala mhpws bgaloume kanena diagnwstiko mhnyma me ta ids, isws to bgaloume en telei
+    return jsonify(response.json())
+def broadcast_nodes_details(): #na doume ligo me ta return values ama ta xreiastoume apo thn send_details_to_nodes thelei prosoxh pws ta apothikeyoume
+    threads = []
+    #responses = []
+    for cur_key, cur_values in app.config['nodes_details'].items():
+        temp_dict = {key: value for key, value in app.config['nodes_details'].items() if key != cur_key} #remove details of current node
+        thread = threading.Thread(target=send_details_to_nodes, args=(temp_dict, cur_key, cur_values))
+        threads.append(thread)
+        thread.start()
+    for thread in threads:
+        thread.join()
+        #responses.append(thread.result)  #diabazw oti to sketo result isws na mhn einai swsth proseggish. Genika tha xreiastoyme ta results mono
+                                            # an theloume na kanoume kanenan elegxo gia to an phgan ola kala.
+
+
+    return 'Information sent to all nodes'
+
 
 def update_nodes_details(details):
     app.config['nodes_details'][details['id']] = (details['wallet_public_key'], details['ip_address'], details['port'])
 
-@app.route('/receive-details')
-def receive_data():
+@app.route('/receive-details', method = ['POST'])
+def receive_details():
     details = request.json
     print("Node details:", details)
     update_nodes_details(details)
+
+    app.config['node_counter']+=1
+    if(app.config['node_counter']==details['no_nodes']):
+        broadcast_nodes_details()
 
     return jsonify({'status': 'success'})
 

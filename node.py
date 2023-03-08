@@ -24,13 +24,14 @@ class Node:
 
         self.ip_address = ip_address
         self.port = port
+        self.no_nodes = no_nodes
 
         self.bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
         self.wallet = self.generate_wallet(key_length)
 
         # self.id = self.get_node_id()
         if ip_address == bootstrap_ip_address:
-            self.NBC = 100*no_nodes
+            self.NBC = 100*self.no_nodes
             self.id = 0
             self.transaction_id = 0
             self.wallet.add_UTXO(self.wallet.get_public_key(), self.transaction_id, self.NBC)
@@ -104,7 +105,8 @@ class Node:
         details = {'id': id,
                    'wallet_public_key': self.wallet.get_public_key(),
                    'ip_address': self.ip_address,
-                   'port': self.port}
+                   'port': self.port,
+                   'no_nodes': self.no_nodes}
 
         self.send_details(details)
 
