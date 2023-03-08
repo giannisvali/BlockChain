@@ -16,6 +16,7 @@ app.config['transaction_id'] = 1
 #         raise argparse.ArgumentTypeError("%s is not a positive integer" % value)
 #     return ivalue
 
+
 @app.route('/node-id')
 def get_node_id():
     node_id = app.config['node_id']  # app.config.get('NEXT_NODE_ID', 0)
@@ -32,14 +33,6 @@ def get_transaction_id():
     response = jsonify({"transaction_id": transaction_id})
     return response
 
-
-
-@app.route('/node-id')
-def get_node_id():
-    node_id = app.config['node_id']  # app.config.get('NEXT_NODE_ID', 0)
-    app.config['node_id'] = node_id + 1
-    response = jsonify({"node_id": node_id})
-    return response
 
 if __name__ == '__main__':
     # app.run(debug=True)
@@ -71,9 +64,6 @@ if __name__ == '__main__':
     node = Node(ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, blockchain_snapshot=None,
                 key_length=2048)
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-    node = Node(ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, blockchain_snapshot = None, key_length = 2048)
-    app.run(host='0.0.0.0', port=5000, debug = True )
 
 #node = Node()
 #app.config['node'] = node
