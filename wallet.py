@@ -13,9 +13,7 @@ from urllib.parse import urlparse
 from uuid import uuid4
 
 
-
 class Wallet:
-
 	def __init__(self, public_key, private_key, address, transactions):
 		##set
 		self.public_key = public_key

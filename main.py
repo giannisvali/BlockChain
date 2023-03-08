@@ -17,6 +17,7 @@ app.config
 #         raise argparse.ArgumentTypeError("%s is not a positive integer" % value)
 #     return ivalue
 
+
 @app.route('/node-id')
 def get_node_id():
     node_id = app.config['node_id']  # app.config.get('NEXT_NODE_ID', 0)
@@ -34,6 +35,7 @@ def get_transaction_id():
     return response
 
 
+
 def update_nodes_details(details):
     app.config['nodes_details'][details['id']] = (details['wallet_public_key'], details['ip_address'], details['port'])
 
@@ -45,8 +47,7 @@ def receive_data():
 
     return jsonify({'status': 'success'})
 
-
-
+ 
 if __name__ == '__main__':
     # app.run(debug=True)
 

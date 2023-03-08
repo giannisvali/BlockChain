@@ -111,7 +111,6 @@ class Node:
 
         return id
 
-
     # add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
     # botstrap node informs all other nodes and gives the request node an id and 100 NBCs
 
