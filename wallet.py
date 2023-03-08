@@ -36,6 +36,7 @@ class Wallet:
 		else:
 			self.UTXOs[wallet_public_key] = self.UTXOs[wallet_public_key].append((transaction_id, NBC))
 
+
 	def get_public_key(self):
 		return self.public_key
 

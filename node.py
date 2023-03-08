@@ -10,11 +10,13 @@ from Crypto.Signature import PKCS1_v1_5
 from wallet import *
 import requests
 import block
+
 from transaction import *
 from flask_cors import CORS
 from flask import jsonify
-app = Flask(__name__)
-CORS(app)
+from main import app
+# app = Flask(__name__)
+# CORS(app)
 
 class Node:
     def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, blockchain_snapshot=None,
@@ -37,13 +39,14 @@ class Node:
         else:
             self.NBC = 0
             #bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
-            response = requests.get(self.bootstrap_node_url + '/node-id')
-            response_dict = response.json()
-            # response_dict = json.loads(response_json)
-            print(response_dict['node_id'])
-            self.id = response_dict['node_id']
+            self.id,b,c = self.insert_into_network()
+
+            thread()
 
 
+def wait_for_details()
+
+    while(1):
 
     ##set
 
@@ -82,15 +85,39 @@ class Node:
 
     # create a wallet for this node, with a public key and a private key
 
-    def register_node_to_ring(self, message):
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    # thelei ilopoisi
-        return self.wallet.get_public_key()
+    def get_id(self):
+        response = requests.get(self.bootstrap_node_url + '/node-id')
+        response_dict = response.json()  # response_dict = json.loads(response_json)
+        print(response_dict['node_id'])
+        return response_dict['node_id']
+
+
+    def send_details(self, details):
+        response = requests.post(self.bootstrap_node_url + '/receive-details', json=details)
+        return jsonify(response.json())
+
+    def insert_into_network(self):
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # thelei ilopoisi
+
+        id = self.get_id()
+
+        details = {'id': id,
+                   'wallet_public_key': self.wallet.get_public_key(),
+                   'ip_address': self.ip_address,
+                   'port': self.port}
+
+        self.send_details(details)
+
+
+        return id
+
+
     # add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
     # botstrap node informs all other nodes and gives the request node an id and 100 NBCs
 
@@ -131,6 +158,7 @@ class Node:
             print("Node with wallet public key:", receiver_address, "will receive ", amount, "NBC")
             print("Node with wallet public key:", self.wallet.get_public_key(), "will have ", change,
                   "NBC left in that transaction")
+
             if change != 0:
                 transaction_output = [(transaction_id, receiver_address, amount),
                                             (transaction_id, self.wallet.get_public_key(), change)]
