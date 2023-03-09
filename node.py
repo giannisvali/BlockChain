@@ -173,6 +173,7 @@ class Node:
         response = requests.post(node_url + '/receive-transaction', json=trans_dict)
         return jsonify(response.json())
 
+
     def broadcast_transaction(self, trans_dict):
         # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun olo
         # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun oli
