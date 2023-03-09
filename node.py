@@ -10,6 +10,7 @@ from Crypto.Signature import PKCS1_v1_5
 from wallet import *
 import requests
 import block
+import threading
 
 from transaction import *
 from flask_cors import CORS
@@ -110,7 +111,6 @@ class Node:
 
         self.send_details(details)
 
-
         return id
 
     # add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
@@ -169,6 +169,10 @@ class Node:
 
     # remember to broadcast it
 
+    def send_transaction(self, node_url, trans_dict):
+        response = requests.post(node_url + '/receive-transaction', json=trans_dict)
+        return jsonify(response.json())
+
     def broadcast_transaction(self, trans_dict):
         # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun olo
         # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun oli
@@ -177,12 +181,24 @@ class Node:
         # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavounoloi
         # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavou oloi
         # to transacrion
-        ring_nodes = self.register_node_to_ring()
-        for i in ring_nodes:
-            response = requests.get(i + '/get-transaction-id',json=trans_dict)
-            response_dict = response.json()
-            if not response_dict["approve"]:
-                print("Not validate!! Node with public key" + response_dict["public_key"] + " has problem!")
+
+        threads = []
+        responses = []
+        network = app.config['nodes_details']
+        for key, values in network:
+            wallet_public_key, ip_address, port = values
+            node_url = 'http://' + ip_address + ":" + port
+            thread = threading.Thread(target=self.send_transaction, args=(node_url, trans_dict))
+            threads.append(thread)
+            thread.start()
+        for thread in threads:
+            thread.join()
+            #responses.append(thread.result)  #pali edw thelei na to doume, einai to idio me prin.Apo katw thelei loupa se ola ta responses
+                                                #dhladh an oloi dexthkan to transaction
+
+        for resp in responses:
+            if not resp["approve"]:
+                print("Not validate!! Node with public key" + trans_dict["public_key"] + " has problem!")
                 return False
 
         return True
@@ -195,9 +211,8 @@ class Node:
         signature = binascii.unhexlify(signature)
         return verifier.verify(transaction_hash, signature)
 
-    @app.route('/get-transaction-id')
-    def validate_transaction(self):
-        trans = request.get_json()
+    def validate_transaction(self, trans):
+        #trans = request.get_json()
         validate_sign = self.verify_signature(trans["signature"], trans["sender_address"], trans["recipient_address"], trans["value"])
         if validate_sign:
             if set(trans["transaction_inputs"]).intersection(self.wallet.get_UTXOs()[trans["sender_address"]]) == set(trans["transaction_inputs"]):

@@ -12,6 +12,36 @@ app.config['node_id'] = 1
 app.config['transaction_id'] = 1
 app.config['nodes_details'] = dict()
 app.config['node_counter'] = 1
+
+parser = ArgumentParser()
+parser.add_argument('--ip', default='127.0.0.1', type=str)
+parser.add_argument('--port', default='5000', type=str)
+parser.add_argument('--bootstrap_ip', default='127.0.0.1', type=str)
+parser.add_argument('--bootstrap_port', default='5000', type=str)
+parser.add_argument('--is_bootstrap', type=int, choices=[0, 1], default=0)
+# parser.add_argument('--capacity', default=5000, type=positive_int)
+parser.add_argument('--capacity', default='5000', type=int)
+parser.add_argument('--difficulty', default=3, type=int)
+parser.add_argument('--no_nodes', default=3, type=int)
+
+args = parser.parse_args()
+if args.capacity <= 0:
+    print('Capacity must be a positive integer! Continuing with the default value of 5.')
+
+ip_address = args.ip
+port = args.port
+bootstrap_ip_address = args.bootstrap_ip
+bootstrap_port = args.bootstrap_port
+is_bootstrap = args.is_bootstrap
+capacity = args.capacity
+difficulty = args.difficulty
+no_nodes = args.no_nodes
+
+node = Node(ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, blockchain_snapshot=None,
+            key_length=2048)
+app.run(host='0.0.0.0', port=5000, debug=True)
+
+
 # def positive_int(value):
 #     ivalue = int(value)
 #     if ivalue <= 0:
@@ -82,37 +112,15 @@ def receive_details():
 
     return jsonify({'status': 'success'})
 
- 
-if __name__ == '__main__':
-    # app.run(debug=True)
 
-    parser = ArgumentParser()
-    parser.add_argument('--ip', default='127.0.0.1', type=str)
-    parser.add_argument('--port', default='5000', type=str)
-    parser.add_argument('--bootstrap_ip', default='127.0.0.1', type=str)
-    parser.add_argument('--bootstrap_port', default='5000', type=str)
-    parser.add_argument('--is_bootstrap', type=int, choices=[0, 1], default=0)
-    # parser.add_argument('--capacity', default=5000, type=positive_int)
-    parser.add_argument('--capacity', default='5000', type=int)
-    parser.add_argument('--difficulty', default=3, type=int)
-    parser.add_argument('--no_nodes', default=3, type=int)
+@app.route('/receive-transaction', method = ['POST'])
+def receive_transaction():
+    transaction_details = request.json
+    return node.validate_transaction(transaction_details)
+    #return jsonify({'status': 'success'})
 
-    args = parser.parse_args()
-    if args.capacity <= 0:
-        print('Capacity must be a positive integer! Continuing with the default value of 5.')
 
-    ip_address = args.ip
-    port = args.port
-    bootstrap_ip_address = args.bootstrap_ip
-    bootstrap_port = args.bootstrap_port
-    is_bootstrap = args.is_bootstrap
-    capacity = args.capacity
-    difficulty = args.difficulty
-    no_nodes = args.no_nodes
 
-    node = Node(ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, blockchain_snapshot=None,
-                key_length=2048)
-    app.run(host='0.0.0.0', port=5000, debug=True)
 
 #node = Node()
 #app.config['node'] = node
