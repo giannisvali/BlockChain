@@ -232,7 +232,12 @@ class Node:
 #
 #     # if enough transactions  mine
 #
-#     def mine_block():
+# def mine_block(self):
+#     mined_block = self.blockchain.get_mined_block()
+#     # check if chain's last block remains the same - maybe block added by another node
+#     if mined_block.previousHash == self.blockchain.get_last_block_hash():
+#         self.blockchain.add_block_to_chain(mined_block)
+#         # self.broadcast_block(mined_block)
 #
 #     def broadcast_block():
 #
