@@ -41,6 +41,7 @@ class Node:
             # #self.UTXO = [(self.transaction_id, self.wallet.get_public_key(), self.NBC)]
             self.wallet.update_utxo(self.wallet.get_public_key(), [],
                                     [(0, 0, self.wallet.get_public_key(), 100 * no_nodes)])
+
             print(self.id)
             app.config['node_details'][self.id] = (self.wallet.get_public_key(), self.ip_address, self.port)
             #self.id = self.insert_into_network()
@@ -49,6 +50,7 @@ class Node:
             self.NBC = 0
             # bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
             self.id = self.insert_into_network()
+
 
     ##set
 

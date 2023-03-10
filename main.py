@@ -96,8 +96,6 @@ def send_details_to_nodes(rest_nodes_details, node_id, cur_node_details,  respon
     responses.append((response.json(), node_url))
 
 
-
-
 def initial_transaction():
 
     for cur_key, cur_values in app.config['nodes_details'].items():
@@ -117,13 +115,13 @@ def broadcast_nodes_details():
             threads.append(thread)
             thread.start()
 
+
     for thread in threads:
         thread.join()
 
     for resp, node_i in responses:
         if resp.status_code != 200:
             return 'Error sending information to some nodes.'
-
     return 'Information sent to all nodes successfully.'
 
 
