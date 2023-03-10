@@ -16,6 +16,8 @@ from transaction import *
 from flask_cors import CORS
 from flask import jsonify
 from main import app
+
+
 # app = Flask(__name__)
 # CORS(app)
 
@@ -32,17 +34,18 @@ class Node:
 
         # self.id = self.get_node_id()
         if ip_address == bootstrap_ip_address:
-            self.NBC = 100*self.no_nodes
+            self.NBC = 100 * self.no_nodes
             self.id = 0
             self.transaction_id = 0
-            self.wallet.add_UTXO(self.wallet.get_public_key(), self.transaction_id, self.NBC)
-            #self.UTXO = [(self.transaction_id, self.wallet.get_public_key(), self.NBC)]
+            # self.wallet.add_UTXO(self.wallet.get_public_key(), self.transaction_id, self.NBC)
+            # #self.UTXO = [(self.transaction_id, self.wallet.get_public_key(), self.NBC)]
+            self.wallet.update_utxo(self.wallet.get_public_key(), [],
+                                    [(0, self.wallet.get_public_key(), 100 * no_nodes)])
             print(self.id)
         else:
             self.NBC = 0
-            #bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
-            self.id,b,c = self.insert_into_network()
-
+            # bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
+            self.id, b, c = self.insert_into_network()
 
     ##set
 
@@ -87,20 +90,11 @@ class Node:
         print(response_dict['node_id'])
         return response_dict['node_id']
 
-
     def send_details(self, details):
         response = requests.post(self.bootstrap_node_url + '/receive-details', json=details)
         return jsonify(response.json())
 
     def insert_into_network(self):
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # thelei ilopoisi
-
         id = self.get_id()
 
         details = {'id': id,
@@ -113,7 +107,8 @@ class Node:
 
         return id
 
-    # add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
+    # add this node to the ring, only the bootstrap node can add a node to the ring after checking
+    # his wallet and ip:port address
     # botstrap node informs all other nodes and gives the request node an id and 100 NBCs
 
     def create_transaction_input(self, UTXOs, wallet_public_key, amount):
@@ -145,7 +140,8 @@ class Node:
         if self.wallet.balance() < amount:
             print("Node" + self.id + ": could not make transaction, not enough money!")
         else:
-            transaction_input, change = self.create_transaction_input(self.wallet.get_UTXOs(), self.wallet.get_public_key(), amount)
+            transaction_input, change = self.create_transaction_input(self.wallet.get_UTXOs(),
+                                                                      self.wallet.get_public_key(), amount)
             if len(transaction_input) == 0:
                 print("Not enough money for the transaction!")
                 return None
@@ -156,49 +152,43 @@ class Node:
 
             if change != 0:
                 transaction_output = [(transaction_id, receiver_address, amount),
-                                            (transaction_id, self.wallet.get_public_key(), change)]
+                                      (transaction_id, self.wallet.get_public_key(), change)]
             else:
                 transaction_output = [(transaction_id, receiver_address, amount)]
 
-            current_trans = Transaction(self.wallet.get_public_key(), transaction_id, transaction_input, transaction_output, self.wallet.get_private_key(), receiver_address, amount)
+            current_trans = Transaction(self.wallet.get_public_key(), transaction_id, transaction_input,
+                                        transaction_output, self.wallet.get_private_key(), receiver_address, amount)
             # enhmerwtiko mhnyma !!!!!!!!!
             if self.broadcast_transaction(current_trans.to_dict()):
                 print("Validate transaction make new UTXOS for that transaction")
             else:
-                print("Not validate transaction!1!!")
+                print("Not validate transaction!!")
 
     # remember to broadcast it
 
-    def send_transaction(self, node_url, trans_dict):
+    def send_transaction(self, node_url, trans_dict, responses):
         response = requests.post(node_url + '/receive-transaction', json=trans_dict)
-        return jsonify(response.json())
+        responses.append((response.json(), node_url))
 
     def broadcast_transaction(self, trans_dict):
-        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun olo
-        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun oli
-        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun ooi
-        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavoun loi
-        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavounoloi
-        # edw prepei na kalestei i register_node_to_ring gia na mas ferie to daxtulidi apo publics key gia na lavou oloi
-        # to transacrion
-
         threads = []
         responses = []
         network = app.config['nodes_details']
         for key, values in network:
             wallet_public_key, ip_address, port = values
             node_url = 'http://' + ip_address + ":" + port
-            thread = threading.Thread(target=self.send_transaction, args=(node_url, trans_dict))
+            thread = threading.Thread(target=self.send_transaction, args=(node_url, trans_dict, responses))
             threads.append(thread)
             thread.start()
         for thread in threads:
             thread.join()
-            #responses.append(thread.result)  #pali edw thelei na to doume, einai to idio me prin.Apo katw thelei loupa se ola ta responses
-                                                #dhladh an oloi dexthkan to transaction
+            # responses.append(thread.result)  #pali edw thelei na to doume,
+            # einai to idio me prin.Apo katw thelei loupa se ola ta responses
+            # dhladh an oloi dexthkan to transaction
 
-        for resp in responses:
+        for resp, node in responses:
             if not resp["approve"]:
-                print("Not validate!! Node with public key" + trans_dict["public_key"] + " has problem!")
+                print("Not validate!! Node with public key" + trans_dict["public_key"] + " has problem!" + node)
                 return False
 
         return True
@@ -212,11 +202,14 @@ class Node:
         return verifier.verify(transaction_hash, signature)
 
     def validate_transaction(self, trans):
-        #trans = request.get_json()
-        validate_sign = self.verify_signature(trans["signature"], trans["sender_address"], trans["recipient_address"], trans["value"])
+        # trans = request.get_json()
+        validate_sign = self.verify_signature(trans["signature"], trans["sender_address"], trans["recipient_address"],
+                                              trans["value"])
         if validate_sign:
-            if set(trans["transaction_inputs"]).intersection(self.wallet.get_UTXOs()[trans["sender_address"]]) == set(trans["transaction_inputs"]):
-                self.wallet.update_utxo(trans["sender_address"], trans["transaction_inputs"], trans["transaction_outputs"])
+            if set(trans["transaction_inputs"]).intersection(self.wallet.get_UTXOs()[trans["sender_address"]]) == set(
+                    trans["transaction_inputs"]):
+                self.wallet.update_utxo(trans["sender_address"], trans["transaction_inputs"],
+                                        trans["transaction_outputs"])
                 print("Validate transaction!!!")
                 response = jsonify({"public_key": self.wallet.get_public_key(), "approve": True})
             else:
@@ -224,14 +217,19 @@ class Node:
                 response = jsonify({"public_key": self.wallet.get_public_key(), "approve": False})
         else:
             print("Not validate sign on the transaction!!Scammer find!")
-            response = jsonify({"public_key": self.wallet.get_public_key(), "approve":  False})
+            response = jsonify({"public_key": self.wallet.get_public_key(), "approve": False})
         return response
 
 #     def add_transaction_to_block():
 #
 #     # if enough transactions  mine
 #
-#     def mine_block():
+# def mine_block(self):
+#     mined_block = self.blockchain.get_mined_block()
+#     # check if chain's last block remains the same - maybe block added by another node
+#     if mined_block.previousHash == self.blockchain.get_last_block_hash():
+#         self.blockchain.add_block_to_chain(mined_block)
+#         # self.broadcast_block(mined_block)
 #
 #     def broadcast_block():
 #
