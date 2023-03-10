@@ -12,7 +12,7 @@ app.config['node_id'] = 1
 app.config['transaction_id'] = 1
 app.config['nodes_details'] = dict()
 app.config['node_counter'] = 1
-
+app.config['transaction_output_id'] = 1
 parser = ArgumentParser()
 parser.add_argument('--ip', default='127.0.0.1', type=str)
 parser.add_argument('--port', default='5000', type=str)
@@ -60,16 +60,31 @@ def get_node_id():
 
 @app.route('/transaction-id')
 def get_transaction_id():
+    transaction_output_id = app.config['transaction_output_id']  # app.config.get('NEXT_NODE_ID', 0)
+    app.config['transaction_output_id'] = transaction_output_id + 1
+    response = jsonify({"transaction_output_id": transaction_output_id})
+    return response
+
+@app.route('/transaction-output-id')
+def get_transaction_id():
     transaction_id = app.config['transaction_id']  # app.config.get('NEXT_NODE_ID', 0)
     app.config['transaction_id'] = transaction_id + 1
     response = jsonify({"transaction_id": transaction_id})
     return response
+
+@app.route('/reduce-transaction-output-id')
+def get_transaction_id():
+    app.config['transaction_output_id']-=1
+    return jsonify({'status': 'success'})
 
 
 @app.route('/receive-network', method=['POST'])
 def receive_network():
     all_details = request.json
     app.config['nodes_details'] = all_details
+    wallet_public_key, ip_address, port = app.config['nodes_details'][0]
+    node.wallet.update_utxo(wallet_public_key, [],
+     [(0, 0, wallet_public_key, 100 * no_nodes)]) #sender, transaction_input, transaction_output)
     return jsonify({'status': 'success'})
 
 
@@ -81,15 +96,26 @@ def send_details_to_nodes(rest_nodes_details, node_id, cur_node_details,  respon
     responses.append((response.json(), node_url))
 
 
+
+
+def initial_transaction():
+
+    for cur_key, cur_values in app.config['nodes_details'].items():
+        if cur_key >0:
+            wallet_public_key = cur_values[0]
+            node.create_transaction(wallet_public_key, 100)
+
+
 def broadcast_nodes_details():
     threads = []
     responses = []
 
     for cur_key, cur_values in app.config['nodes_details'].items():
-        temp_dict = {key: value for key, value in app.config['nodes_details'].items() if key != cur_key}
-        thread = threading.Thread(target=send_details_to_nodes, args=(temp_dict, cur_key, cur_values, responses))
-        threads.append(thread)
-        thread.start()
+        if cur_key > 0:
+            temp_dict = {key: value for key, value in app.config['nodes_details'].items() if key != cur_key}
+            thread = threading.Thread(target=send_details_to_nodes, args=(temp_dict, cur_key, cur_values, responses))
+            threads.append(thread)
+            thread.start()
 
     for thread in threads:
         thread.join()
@@ -99,6 +125,12 @@ def broadcast_nodes_details():
             return 'Error sending information to some nodes.'
 
     return 'Information sent to all nodes successfully.'
+
+
+def complete_network():
+    broadcast_nodes_details()
+    initial_transaction()
+
 
 def update_nodes_details(details):
     app.config['nodes_details'][details['id']] = (details['wallet_public_key'], details['ip_address'], details['port'])
@@ -112,8 +144,9 @@ def receive_details():
 
     app.config['node_counter'] += 1
     if app.config['node_counter'] == details['no_nodes']:
-        broadcast_nodes_details()
-        # threading.Thread(target=broadcast_nodes_details).start()
+        #broadcast_nodes_details()
+        threading.Thread(target=complete_network).start()
+
         # edw prepei na proste9ei na ksekinsoume gia ola ta nodes ta transaction??
     return jsonify({'status': 'success'})
 

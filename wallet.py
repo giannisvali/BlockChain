@@ -30,11 +30,11 @@ class Wallet:
 		for item in transaction_input:
 			if item in self.UTXOs[sender]:
 				self.UTXOs[sender].remove(item)
-		for transaction_id, address, amount in transaction_output:
+		for transaction_output_id, transaction_id, address, amount in transaction_output:
 			if address not in self.UTXOs:
-				self.UTXOs[address] = [(transaction_id, amount)]
+				self.UTXOs[address] = [(transaction_output_id, amount)] #apla ebala to id tou output anti gia to id tou transaction
 			else:
-				self.UTXOs[address] = self.UTXOs[address].append((transaction_id, amount))
+				self.UTXOs[address] = self.UTXOs[address].append((transaction_output_id, amount))
 
 	def get_public_key(self):
 		return self.public_key
