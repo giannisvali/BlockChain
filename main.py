@@ -1,7 +1,7 @@
 import requests
 from flask import Flask, request
 from argparse import ArgumentParser
-from node import *
+from node import Node
 from flask_cors import CORS
 from flask import jsonify
 import threading
