@@ -66,58 +66,63 @@ def get_transaction_id():
     return response
 
 
-@app.route('/receive-network', method = ['POST'])
+@app.route('/receive-network', method=['POST'])
 def receive_network():
     all_details = request.json
     app.config['nodes_details'] = all_details
     return jsonify({'status': 'success'})
 
 
-def send_details_to_nodes(rest_nodes_details, node_id, cur_node_details):
+def send_details_to_nodes(rest_nodes_details, node_id, cur_node_details,  responses):
     wallet_public_key, ip_address, port = cur_node_details
     node_url = 'http://' + ip_address + ":" + port
 
     response = requests.post(node_url + '/receive-network', json=rest_nodes_details)
-    #to node_id mhpws axrhsto alla to ebala mhpws bgaloume kanena diagnwstiko mhnyma me ta ids, isws to bgaloume en telei
-    return jsonify(response.json())
-def broadcast_nodes_details(): #na doume ligo me ta return values ama ta xreiastoume apo thn send_details_to_nodes thelei prosoxh pws ta apothikeyoume
+    responses.append((response.json(), node_url))
+
+
+def broadcast_nodes_details():
     threads = []
-    #responses = []
+    responses = []
+
     for cur_key, cur_values in app.config['nodes_details'].items():
-        temp_dict = {key: value for key, value in app.config['nodes_details'].items() if key != cur_key} #remove details of current node
-        thread = threading.Thread(target=send_details_to_nodes, args=(temp_dict, cur_key, cur_values))
+        temp_dict = {key: value for key, value in app.config['nodes_details'].items() if key != cur_key}
+        thread = threading.Thread(target=send_details_to_nodes, args=(temp_dict, cur_key, cur_values, responses))
         threads.append(thread)
         thread.start()
+
     for thread in threads:
         thread.join()
-        #responses.append(thread.result)  #diabazw oti to sketo result isws na mhn einai swsth proseggish. Genika tha xreiastoyme ta results mono
-                                            # an theloume na kanoume kanenan elegxo gia to an phgan ola kala.
 
+    for resp, node_i in responses:
+        if resp.status_code != 200:
+            return 'Error sending information to some nodes.'
 
-    return 'Information sent to all nodes'
-
+    return 'Information sent to all nodes successfully.'
 
 def update_nodes_details(details):
     app.config['nodes_details'][details['id']] = (details['wallet_public_key'], details['ip_address'], details['port'])
 
-@app.route('/receive-details', method = ['POST'])
+
+@app.route('/receive-details', method=['POST'])
 def receive_details():
     details = request.json
     print("Node details:", details)
     update_nodes_details(details)
 
-    app.config['node_counter']+=1
-    if(app.config['node_counter']==details['no_nodes']):
+    app.config['node_counter'] += 1
+    if app.config['node_counter'] == details['no_nodes']:
         broadcast_nodes_details()
-
+        # threading.Thread(target=broadcast_nodes_details).start()
+        # edw prepei na proste9ei na ksekinsoume gia ola ta nodes ta transaction??
     return jsonify({'status': 'success'})
 
 
-@app.route('/receive-transaction', method = ['POST'])
+@app.route('/receive-transaction', method=['POST'])
 def receive_transaction():
     transaction_details = request.json
     return node.validate_transaction(transaction_details)
-    #return jsonify({'status': 'success'})
+    # return jsonify({'status': 'success'})
 
 
 
