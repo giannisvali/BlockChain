@@ -1,5 +1,4 @@
 from wallet import Wallet
-import main
 import Crypto
 from flask_cors import CORS
 from flask import jsonify
@@ -15,11 +14,7 @@ import threading
 from transaction import *
 from flask_cors import CORS
 from flask import jsonify
-from main import app
 
-
-# app = Flask(__name__)
-# CORS(app)
 
 class Node:
     def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, blockchain_snapshot=None,
@@ -28,6 +23,7 @@ class Node:
         self.ip_address = ip_address
         self.port = port
         self.no_nodes = no_nodes
+        self.network = dict()
 
         self.bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
         self.wallet = self.generate_wallet(key_length)
@@ -43,37 +39,19 @@ class Node:
                                     [(0, 0, self.wallet.get_public_key(), 100 * no_nodes)])
 
             print(self.id)
-            app.config['node_details'][self.id] = (self.wallet.get_public_key(), self.ip_address, self.port)
-            #self.id = self.insert_into_network()
+            self.network[self.id] = (self.wallet.get_public_key(), self.ip_address, self.port)
+            # self.id = self.insert_into_network()
 
         else:
             self.NBC = 0
             # bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
             self.id = self.insert_into_network()
 
+    def set_network(self, dict_net):
+        self.network = dict_net
 
-    ##set
-
-    # if(self.id == 0):
-
-    # self.chain
-    # self.current_id_count
-    # self.NBCs
-    # self.wallet
-
-    # slef.ring[]   #here we store information for every node, as its id, its address (ip:port) its public key and its balance
-
-    # @staticmethod
-    # @app.route('/node-id')
-    # def get_node_id():
-    # 	node_id = app.config['node_id'] #app.config.get('NEXT_NODE_ID', 0)
-    # 	app.config['node_id'] = node_id + 1
-    # 	return str(node_id)
-
-    # def create_new_block(self):
-    #     return
-
-    def generate_keys(self, key_length):
+    @staticmethod
+    def generate_keys(key_length):
         random_generator = Random.new().read
         key = RSA.generate(key_length, random_generator)
         private_key = key.export_key()
@@ -90,10 +68,16 @@ class Node:
     # create a wallet for this node, with a public key and a private key
 
     def get_id(self):
+
+
+        print(self.bootstrap_node_url + '/node-id')
         response = requests.get(self.bootstrap_node_url + '/node-id')
-        response_dict = response.json()  # response_dict = json.loads(response_json)
-        print(response_dict['node_id'])
-        return response_dict['node_id']
+        print("eimai o slave", response, flush = True)
+        #response_dict = response.json()  # response_dict = json.loads(response_json)
+        #print(response_dict['node_id'])
+        print(type(response))
+        return response
+        #return response_dict['node_id']
 
     def send_details(self, details):
         response = requests.post(self.bootstrap_node_url + '/receive-details', json=details)
@@ -117,7 +101,7 @@ class Node:
     # botstrap node informs all other nodes and gives the request node an id and 100 NBCs
 
     def create_transaction_input(self, UTXOs, wallet_public_key, amount):
-        #elegxoi: ama den yparxei to wallet_public_key kai ama to amount einai <=0 (kapou prepei na ginoun aytoi)
+        # elegxoi: ama den yparxei to wallet_public_key kai ama to amount einai <=0 (kapou prepei na ginoun aytoi)
         amount_left = amount
         change = 0
         cur_node_UTXOs = UTXOs[wallet_public_key]
@@ -134,14 +118,14 @@ class Node:
 
         return transaction_input, change
 
-    def create_transaction(self, receiver_address, amount): #yphrxe kai ena signature isws xreiastei\!!!!
+    def create_transaction(self, receiver_address, amount):  # yphrxe kai ena signature isws xreiastei\!!!!
         # na doume pws tha dimiourgoume to transaction id kai pws 9a kanoume validation na min einai amnoun < balance
         # bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
         response = requests.get(self.bootstrap_node_url + '/transaction-id')
         response_dict = response.json()
         # response_dict = json.loads(response_json)
         print(response_dict['node_id'])
-        #ama parw transaction_id kai telika den ginei validate to transaction prepei na meiwsw to transaction_id kata 1
+        # ama parw transaction_id kai telika den ginei validate to transaction prepei na meiwsw to transaction_id kata 1
         transaction_id = response_dict['transaction_id']
 
         if self.wallet.balance() < amount:
@@ -165,7 +149,7 @@ class Node:
             transaction_output_id1 = response_dict['transaction_output_id']
             if change != 0:
                 response = requests.get(self.bootstrap_node_url + '/transaction-output-id')
-                response_dict = response    .json()
+                response_dict = response.json()
                 print(response_dict['transaction_output_id'])
                 # ama parw transaction_id kai telika den ginei validate to transaction prepei na meiwsw to transaction_id kata 1
 
@@ -184,7 +168,7 @@ class Node:
                 response = requests.get(self.bootstrap_node_url + '/reduce-transaction-output-id')
                 response_dict = response.json()
                 print(response_dict['transaction_output_id'])
-                if change!=0:
+                if change != 0:
                     response = requests.get(self.bootstrap_node_url + '/reduce-transaction-output-id')
                     response_dict = response.json()
                     print(response_dict['transaction_output_id'])
@@ -200,8 +184,8 @@ class Node:
     def broadcast_transaction(self, trans_dict):
         threads = []
         responses = []
-        network = app.config['nodes_details']
-        for key, values in network:
+        # network = main.app.config['nodes_details']
+        for key, values in self.network:
             wallet_public_key, ip_address, port = values
             node_url = 'http://' + ip_address + ":" + port
             thread = threading.Thread(target=self.send_transaction, args=(node_url, trans_dict, responses))
