@@ -7,7 +7,8 @@ from node import *
 from flask_cors import CORS
 from flask import jsonify, Response
 import threading
-
+import base64
+#aaaaaaaaaa
 app = Flask(__name__)
 CORS(app)
 app.config['node_id'] = 1
@@ -31,24 +32,23 @@ def get_node_id():
     node_id = app.config.get('node_id', 0)
     app.config['node_id'] = node_id + 1
     response = jsonify({"node_id": node_id})
-    return response
-
-
+    return response, 200
 
 
 @app.route('/transaction-id')
 def get_transaction_id():
+    transaction_id = app.config['transaction_id']  # app.config.get('NEXT_NODE_ID', 0)
+    app.config['transaction_id'] = transaction_id + 1
+    response = jsonify({"transaction_id": transaction_id})
+    return response
+
+@app.route('/transaction-output-id')
+def get_transaction_output_id():
     transaction_output_id = app.config['transaction_output_id']  # app.config.get('NEXT_NODE_ID', 0)
     app.config['transaction_output_id'] = transaction_output_id + 1
     response = jsonify({"transaction_output_id": transaction_output_id})
     return response
 
-@app.route('/transaction-output-id')
-def get_transaction_output_id():
-    transaction_id = app.config['transaction_id']  # app.config.get('NEXT_NODE_ID', 0)
-    app.config['transaction_id'] = transaction_id + 1
-    response = jsonify({"transaction_id": transaction_id})
-    return response
 
 @app.route('/reduce-transaction-output-id')
 def reduce_transaction_output_id():
@@ -59,9 +59,10 @@ def reduce_transaction_output_id():
 @app.route('/receive-network', methods=['POST'])
 def receive_network():
     all_details = request.json
+    print("all details:", all_details)
     app.config['nodes_details'] = all_details
     cur_node.set_network(app.config['nodes_details'])
-    wallet_public_key, ip_address, port = app.config['nodes_details'][0]
+    wallet_public_key, ip_address, port = app.config['nodes_details']['0']  #bootstrap node details
     cur_node.wallet.update_utxo(wallet_public_key, [],
      [(0, 0, wallet_public_key, 100 * no_nodes)]) #sender, transaction_input, transaction_output)
     return jsonify({'status': 'success'})
@@ -72,16 +73,8 @@ def send_details_to_nodes(rest_nodes_details, node_id, cur_node_details,  respon
     node_url = 'http://' + ip_address + ":" + port
 
     response = requests.post(node_url + '/receive-network', json=rest_nodes_details)
-    responses.append((response.json(), node_url))
-
-
-def initial_transaction():
-
-    for cur_key, cur_values in app.config['nodes_details'].items():
-        if cur_key >0:
-            wallet_public_key = cur_values[0]
-            cur_node.create_transaction(wallet_public_key, 100)
-
+    #responses.append((response.json(), node_url))
+    responses.append((response, cur_node_details))
 
 def broadcast_nodes_details():
     threads = []
@@ -98,30 +91,74 @@ def broadcast_nodes_details():
     for thread in threads:
         thread.join()
 
+    print("thread responses in boradcast details")
+    print(responses)
+
     for resp, node_i in responses:
-        if resp.status_code != 200:
+        print(resp.status_code)
+        if resp.status_code != 200: #edw isws baloume se poio node yphrxe problhma xrhsimopoiwntas ta stoixeia tou node_i = (wallet_public_key, ip_address, port)
             return 'Error sending information to some nodes.'
     return 'Information sent to all nodes successfully.'
 
 
+def initial_transaction():
+
+    for cur_key, cur_values in app.config['nodes_details'].items():
+        if cur_key >0:
+            print("eimai sto initial transaction")
+            wallet_public_key = cur_values[0]
+            cur_node.create_transaction(wallet_public_key, 100)
+
+    print("teleiwsa ta initial transactions")
+
 def complete_network():
+    print("complete1")
     cur_node.set_network(app.config['nodes_details'])
+    print("complete2")
+
     broadcast_nodes_details()
+    print("complete3")
+
     initial_transaction()
+    print("complete4")
+
 
 
 def update_nodes_details(details):
+    print(details)
+    #print(details["port"])
+    print(type(details))
+    print('Details:', details)
+    print('Type of Details:', type(details['id']))
+    print('Keys of Details:', details.keys())
+    #app.config['nodes_details'][details['id']] = (details['wallet_public_key'].encode('utf-8'), details['ip_address'], details['port'])
     app.config['nodes_details'][details['id']] = (details['wallet_public_key'], details['ip_address'], details['port'])
-
+    #base64.b64decode
 
 @app.route('/receive-details', methods=['POST'])
 def receive_details():
-    details = request.json
+    print("mphka sto receive details", flush = True)
+    data = request.get_data()
+    details = json.loads(data)
+    print(type(details))
+    # details = request.get_json()
+    # print(type(details))
     print("Node details:", details)
     update_nodes_details(details)
 
+    print(app.config['node_counter'])
+    print(details['no_nodes'])
     app.config['node_counter'] += 1
-    if app.config['node_counter'] == details['no_nodes']:
+    if app.config['node_counter'] == cur_node.no_nodes:#details['no_nodes']:
+        print("mazeythkame oloi!")
+        bootstrap_details = {'id': cur_node.id,
+                   #'wallet_public_key': cur_node.wallet.get_public_key().decode('utf-8'),
+                   'wallet_public_key': cur_node.wallet.get_public_key(),
+                   'ip_address': cur_node.ip_address,
+                   'port': cur_node.port,
+                   'no_nodes': cur_node.no_nodes}
+
+        update_nodes_details(bootstrap_details)
         #broadcast_nodes_details()
         threading.Thread(target=complete_network).start()
 
@@ -131,7 +168,15 @@ def receive_details():
 
 @app.route('/receive-transaction', methods=['POST'])
 def receive_transaction():
+    # data = request.get_data()
+    # details = json.loads(data)
+    # print("transaction details:", details, flush = True)
     transaction_details = request.json
+    print("transaction details:", transaction_details, flush = True)
+    # transaction_details['sender_address'] = transaction_details['sender_address'].encode('utf-8')
+    # transaction_details['recipient_address'] = transaction_details['recipient_address'].decode('utf-8')
+    #transaction_details['signature'] = transaction_details['signature'].decode('utf-8')
+
     return cur_node.validate_transaction(transaction_details)
     # return jsonify({'status': 'success'})
 
@@ -148,6 +193,7 @@ if __name__ == '__main__':
     parser.add_argument('--capacity', default='5000', type=int)
     parser.add_argument('--difficulty', default=3, type=int)
     parser.add_argument('--no_nodes', default=3, type=int)
+    parser.add_argument('--app_port', default=5000, type = int)
 
     args = parser.parse_args()
     if args.capacity <= 0:
@@ -161,11 +207,13 @@ if __name__ == '__main__':
     capacity = args.capacity
     difficulty = args.difficulty
     no_nodes = args.no_nodes
+    app_port = args.app_port
+    print(no_nodes)
 
     global cur_node
     cur_node = Node(ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, blockchain_snapshot=None,
                 key_length=2048)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=app_port)#, debug=True)
 
 
 

@@ -75,6 +75,7 @@ class Transaction:
         transaction_data = str(self.sender_address) + str(self.receiver_address) + str(self.amount)
         transaction_hash = SHA256.new(transaction_data.encode())
         sign_key = RSA.importKey(binascii.unhexlify(self.sender_private_key))
+        #sign_key = RSA.importKey(self.sender_private_key)
         signer = PKCS1_v1_5.new(sign_key)
         signature = signer.sign(transaction_hash)
         return binascii.hexlify(signature).decode('ascii')

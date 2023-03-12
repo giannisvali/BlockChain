@@ -27,6 +27,8 @@ class Wallet:
 		# self.transactions
 
 	def update_utxo(self, sender, transaction_input, transaction_output):
+		print(self.UTXOs)
+		print(sender)
 		for item in transaction_input:
 			if item in self.UTXOs[sender]:
 				self.UTXOs[sender].remove(item)

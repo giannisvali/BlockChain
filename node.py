@@ -10,7 +10,8 @@ from wallet import *
 import requests
 import block
 import threading
-
+import base64
+import binascii
 from transaction import *
 from flask_cors import CORS
 from flask import jsonify
@@ -23,6 +24,8 @@ class Node:
         self.ip_address = ip_address
         self.port = port
         self.no_nodes = no_nodes
+        print(self.no_nodes)
+        print(self.port)
         self.network = dict()
 
         self.bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
@@ -30,6 +33,7 @@ class Node:
 
         # self.id = self.get_node_id()
         if ip_address == bootstrap_ip_address:
+            print("eimai o bootstrap kai eishltha")
             self.NBC = 100 * self.no_nodes
             self.id = 0
             self.transaction_id = 0
@@ -49,13 +53,16 @@ class Node:
 
     def set_network(self, dict_net):
         self.network = dict_net
+        print("Network:", self.network)
 
     @staticmethod
     def generate_keys(key_length):
         random_generator = Random.new().read
         key = RSA.generate(key_length, random_generator)
-        private_key = key.export_key()
-        public_key = key.publickey().export_key()
+        # private_key = key.export_key()
+        # public_key = key.publickey().export_key()
+        private_key = binascii.hexlify(key.export_key()).decode('utf-8')
+        public_key = binascii.hexlify(key.publickey().export_key()).decode('utf-8')
 
         return public_key, private_key
 
@@ -66,27 +73,43 @@ class Node:
     # create a wallet for this node, with a public key and a private key
 
     # create a wallet for this node, with a public key and a private key
+    @staticmethod
+    def check_status_code(response_status_code, expected_status_code = 200):
+        if response_status_code!=expected_status_code:
+            exit("Something went wrong when trying to connect to the network! Exiting...")
 
     def get_id(self):
 
 
         print(self.bootstrap_node_url + '/node-id')
         response = requests.get(self.bootstrap_node_url + '/node-id')
-        print("eimai o slave", response, flush = True)
-        #response_dict = response.json()  # response_dict = json.loads(response_json)
-        #print(response_dict['node_id'])
-        print(type(response))
-        return response
+        print("eimai o slave", response.json(), flush = True)
+        print(response.status_code)
+        self.check_status_code(response.status_code, 200)
+        data = response.json()
+
+        #data = json.loads(response.content) #isodynamo me to response.json()
+        #print(data)
+        return data['node_id']
         #return response_dict['node_id']
 
     def send_details(self, details):
-        response = requests.post(self.bootstrap_node_url + '/receive-details', json=details)
-        return jsonify(response.json())
+        print("stelnw ta details")
+        response = requests.post(self.bootstrap_node_url + '/receive-details', json = details)#json=json.dumps(details).encode('utf-8'))
+        print(response, flush = True)
+        print(response.status_code)
+        self.check_status_code(response.status_code, 200)
+        return response #jsonify(response.json())
 
     def insert_into_network(self):
         id = self.get_id()
+        print(type(id))
+        print("loooool", id, flush=True)
+
+        print(self.no_nodes)
 
         details = {'id': id,
+                   #'wallet_public_key': self.wallet.get_public_key().decode('utf-8'),
                    'wallet_public_key': self.wallet.get_public_key(),
                    'ip_address': self.ip_address,
                    'port': self.port,
@@ -124,7 +147,7 @@ class Node:
         response = requests.get(self.bootstrap_node_url + '/transaction-id')
         response_dict = response.json()
         # response_dict = json.loads(response_json)
-        print(response_dict['node_id'])
+        print(response_dict['transaction_id'])
         # ama parw transaction_id kai telika den ginei validate to transaction prepei na meiwsw to transaction_id kata 1
         transaction_id = response_dict['transaction_id']
 
@@ -178,15 +201,24 @@ class Node:
     # remember to broadcast it
 
     def send_transaction(self, node_url, trans_dict, responses):
-        response = requests.post(node_url + '/receive-transaction', json=trans_dict)
+        print("stelnw send transaction")
+        print(trans_dict)
+        print(type(trans_dict))
+        # trans_dict['sender_address'] = trans_dict['sender_address'].decode('utf-8')
+        # trans_dict['recipient_address'] = trans_dict['recipient_address'].decode('utf-8')
+        #trans_dict['signature'] = trans_dict['signature'].decode('utf-8')
+
+        response = requests.post(node_url + '/receive-transaction', json = trans_dict)
+        print("send transaction response:", response, flush  = True)
         responses.append((response.json(), node_url))
 
     def broadcast_transaction(self, trans_dict):
         threads = []
         responses = []
         # network = main.app.config['nodes_details']
-        for key, values in self.network:
+        for key, values in self.network.items():
             wallet_public_key, ip_address, port = values
+            print(ip_address, port)
             node_url = 'http://' + ip_address + ":" + port
             thread = threading.Thread(target=self.send_transaction, args=(node_url, trans_dict, responses))
             threads.append(thread)
@@ -214,18 +246,21 @@ class Node:
 
     def validate_transaction(self, trans):
         # trans = request.get_json()
+        print("validate_transaction:", type(trans))
         validate_sign = self.verify_signature(trans["signature"], trans["sender_address"], trans["recipient_address"],
                                               trans["value"])
+        print('lol')
         if validate_sign:
-            if set(trans["transaction_inputs"]).intersection(self.wallet.get_UTXOs()[trans["sender_address"]]) == set(
-                    trans["transaction_inputs"]):
-                self.wallet.update_utxo(trans["sender_address"], trans["transaction_inputs"],
-                                        trans["transaction_outputs"])
-                print("Validate transaction!!!")
-                response = jsonify({"public_key": self.wallet.get_public_key(), "approve": True})
-            else:
-                print("Not validate amount for the transaction!!Scammer find!")
-                response = jsonify({"public_key": self.wallet.get_public_key(), "approve": False})
+            #baraei epeidh mia lista de mporei na mpei mesa se ena set
+            # if set(trans["transaction_inputs"]).intersection(self.wallet.get_UTXOs()[trans["sender_address"]]) == set(
+            #         trans["transaction_inputs"]):
+            self.wallet.update_utxo(trans["sender_address"], trans["transaction_inputs"],
+                                    trans["transaction_outputs"])
+            print("Validate transaction!!!")
+            response = jsonify({"public_key": self.wallet.get_public_key(), "approve": True})
+            # else:
+            #     print("Not validate amount for the transaction!!Scammer find!")
+            #     response = jsonify({"public_key": self.wallet.get_public_key(), "approve": False})
         else:
             print("Not validate sign on the transaction!!Scammer find!")
             response = jsonify({"public_key": self.wallet.get_public_key(), "approve": False})
