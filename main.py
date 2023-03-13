@@ -59,9 +59,9 @@ def reduce_transaction_output_id():
 @app.route('/receive-network', methods=['POST'])
 def receive_network():
     all_details = request.json
-    print("all details:", all_details)
     app.config['nodes_details'] = all_details
     cur_node.set_network(app.config['nodes_details'])
+    print("APP CONFIG:", app.config['nodes_details'])
     wallet_public_key, ip_address, port = app.config['nodes_details']['0']  #bootstrap node details
     cur_node.wallet.update_utxo(wallet_public_key, [],
      [(0, 0, wallet_public_key, 100 * no_nodes)]) #sender, transaction_input, transaction_output)
@@ -81,8 +81,9 @@ def broadcast_nodes_details():
     responses = []
 
     for cur_key, cur_values in app.config['nodes_details'].items():
-        if cur_key > 0:
-            temp_dict = {key: value for key, value in app.config['nodes_details'].items() if key != cur_key}
+        print("CUR KEYYY", cur_key)
+        if str(cur_key) == '1':
+            temp_dict = {key: value for key, value in app.config['nodes_details'].items()}
             thread = threading.Thread(target=send_details_to_nodes, args=(temp_dict, cur_key, cur_values, responses))
             threads.append(thread)
             thread.start()
@@ -91,11 +92,8 @@ def broadcast_nodes_details():
     for thread in threads:
         thread.join()
 
-    print("thread responses in boradcast details")
-    print(responses)
 
     for resp, node_i in responses:
-        print(resp.status_code)
         if resp.status_code != 200: #edw isws baloume se poio node yphrxe problhma xrhsimopoiwntas ta stoixeia tou node_i = (wallet_public_key, ip_address, port)
             return 'Error sending information to some nodes.'
     return 'Information sent to all nodes successfully.'
@@ -104,7 +102,8 @@ def broadcast_nodes_details():
 def initial_transaction():
 
     for cur_key, cur_values in app.config['nodes_details'].items():
-        if cur_key >0:
+        #if str(cur_key) != '0':
+        if str(cur_key) == '1':
             print("eimai sto initial transaction")
             wallet_public_key = cur_values[0]
             cur_node.create_transaction(wallet_public_key, 100)
@@ -122,17 +121,14 @@ def complete_network():
     initial_transaction()
     print("complete4")
 
+    print("Node UTXO!!!", cur_node.wallet.get_UTXOs())
+
 
 
 def update_nodes_details(details):
-    print(details)
-    #print(details["port"])
-    print(type(details))
-    print('Details:', details)
-    print('Type of Details:', type(details['id']))
-    print('Keys of Details:', details.keys())
+
     #app.config['nodes_details'][details['id']] = (details['wallet_public_key'].encode('utf-8'), details['ip_address'], details['port'])
-    app.config['nodes_details'][details['id']] = (details['wallet_public_key'], details['ip_address'], details['port'])
+    app.config['nodes_details'][str(details['id'])] = (details['wallet_public_key'], details['ip_address'], details['port'])
     #base64.b64decode
 
 @app.route('/receive-details', methods=['POST'])
@@ -140,14 +136,10 @@ def receive_details():
     print("mphka sto receive details", flush = True)
     data = request.get_data()
     details = json.loads(data)
-    print(type(details))
     # details = request.get_json()
     # print(type(details))
-    print("Node details:", details)
     update_nodes_details(details)
 
-    print(app.config['node_counter'])
-    print(details['no_nodes'])
     app.config['node_counter'] += 1
     if app.config['node_counter'] == cur_node.no_nodes:#details['no_nodes']:
         print("mazeythkame oloi!")
@@ -159,6 +151,8 @@ def receive_details():
                    'no_nodes': cur_node.no_nodes}
 
         update_nodes_details(bootstrap_details)
+        print("APP CONFIG AFTER BOOTSTRAP:", app.config["nodes_details"])
+
         #broadcast_nodes_details()
         threading.Thread(target=complete_network).start()
 

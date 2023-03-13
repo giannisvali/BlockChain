@@ -17,6 +17,8 @@ class Transaction:
     def __init__(self, sender_address, transaction_id,
                  transaction_input, transaction_output, sender_private_key, recipient_address, value):
 
+
+
         # set
         # self.sender_address: #To public key του wallet από το οποίο προέρχονται τα χρήματα
         self.sender_address = sender_address

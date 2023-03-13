@@ -130,73 +130,82 @@ class Node:
         cur_node_UTXOs = UTXOs[wallet_public_key]
         transaction_input = []
         for tr_id, NBC in cur_node_UTXOs:
-            amount_left -= NBC
             transaction_input.append((tr_id, NBC))
+
             if amount_left - NBC <= 0:
                 change = NBC - amount_left
-                break
+                return transaction_input, change
+            amount_left -= NBC
+
 
         if amount_left > 0:
             return [], 0
 
-        return transaction_input, change
 
     def create_transaction(self, receiver_address, amount):  # yphrxe kai ena signature isws xreiastei\!!!!
         # na doume pws tha dimiourgoume to transaction id kai pws 9a kanoume validation na min einai amnoun < balance
         # bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
         response = requests.get(self.bootstrap_node_url + '/transaction-id')
         response_dict = response.json()
+        print("UTXOS KATA TO CREATION TREANSACTIONl", self.wallet.get_UTXOs())
         # response_dict = json.loads(response_json)
         print(response_dict['transaction_id'])
         # ama parw transaction_id kai telika den ginei validate to transaction prepei na meiwsw to transaction_id kata 1
         transaction_id = response_dict['transaction_id']
 
-        if self.wallet.balance() < amount:
-            print("Node" + self.id + ": could not make transaction, not enough money!")
-        else:
-            transaction_input, change = self.create_transaction_input(self.wallet.get_UTXOs(),
-                                                                      self.wallet.get_public_key(), amount)
-            if len(transaction_input) == 0:
-                print("Not enough money for the transaction!")
-                return None
+        # if self.wallet.balance() < amount:
+        #     print("Node" + self.id + ": could not make transaction, not enough money!")
+        # else:
+        transaction_input, change = self.create_transaction_input(self.wallet.get_UTXOs(),
+                                                                  self.wallet.get_public_key(), amount)
 
-            print("Node with wallet public key:", receiver_address, "will receive ", amount, "NBC")
-            print("Node with wallet public key:", self.wallet.get_public_key(), "will have ", change,
-                  "NBC left in that transaction")
+        if len(transaction_input) == 0:
+            print("Not enough money for the transaction!")
+            return None
 
+        print("Node with wallet public key:", receiver_address, "will receive ", amount, "NBC")
+        print("Node with wallet public key:", self.wallet.get_public_key(), "will have ", change,
+              "NBC left in that transaction")
+
+        response = requests.get(self.bootstrap_node_url + '/transaction-output-id')
+        response_dict = response.json()
+        print(response_dict['transaction_output_id'])
+        # ama parw transaction_id kai telika den ginei validate to transaction prepei na meiwsw to transaction_id kata 1
+
+        transaction_output_id1 = response_dict['transaction_output_id']
+        if change != 0:
             response = requests.get(self.bootstrap_node_url + '/transaction-output-id')
             response_dict = response.json()
             print(response_dict['transaction_output_id'])
             # ama parw transaction_id kai telika den ginei validate to transaction prepei na meiwsw to transaction_id kata 1
 
-            transaction_output_id1 = response_dict['transaction_output_id']
+            transaction_output_id2 = response_dict['transaction_output_id']
+            transaction_output = [(transaction_output_id1, transaction_id, receiver_address, amount),
+                                  (transaction_output_id2, transaction_id, self.wallet.get_public_key(), change)]
+        else:
+            transaction_output = [(transaction_output_id1, transaction_id, receiver_address, amount)]
+
+
+
+        current_trans = Transaction(self.wallet.get_public_key(), transaction_id, transaction_input,
+                                    transaction_output, self.wallet.get_private_key(), receiver_address, amount)
+
+        print("CURRENT TRANS:", current_trans.to_dict())
+
+        # enhmerwtiko mhnyma !!!!!!!!!
+        if self.broadcast_transaction(current_trans.to_dict()):
+            print("Validate transaction make new UTXOS for that transaction")
+            self.wallet.update_utxo(current_trans.sender_address, current_trans.transaction_inputs, current_trans.transaction_output)
+        else:
+            response = requests.get(self.bootstrap_node_url + '/reduce-transaction-output-id')
+            response_dict = response.json()
+            print(response_dict['transaction_output_id'])
             if change != 0:
-                response = requests.get(self.bootstrap_node_url + '/transaction-output-id')
-                response_dict = response.json()
-                print(response_dict['transaction_output_id'])
-                # ama parw transaction_id kai telika den ginei validate to transaction prepei na meiwsw to transaction_id kata 1
-
-                transaction_output_id2 = response_dict['transaction_output_id']
-                transaction_output = [(transaction_output_id1, transaction_id, receiver_address, amount),
-                                      (transaction_output_id2, transaction_id, self.wallet.get_public_key(), change)]
-            else:
-                transaction_output = [(transaction_output_id1, transaction_id, receiver_address, amount)]
-
-            current_trans = Transaction(self.wallet.get_public_key(), transaction_id, transaction_input,
-                                        transaction_output, self.wallet.get_private_key(), receiver_address, amount)
-            # enhmerwtiko mhnyma !!!!!!!!!
-            if self.broadcast_transaction(current_trans.to_dict()):
-                print("Validate transaction make new UTXOS for that transaction")
-            else:
                 response = requests.get(self.bootstrap_node_url + '/reduce-transaction-output-id')
                 response_dict = response.json()
                 print(response_dict['transaction_output_id'])
-                if change != 0:
-                    response = requests.get(self.bootstrap_node_url + '/reduce-transaction-output-id')
-                    response_dict = response.json()
-                    print(response_dict['transaction_output_id'])
 
-                print("Not validate transaction!!")
+            print("Not validate transaction!!")
 
     # remember to broadcast it
 
@@ -249,18 +258,20 @@ class Node:
         print("validate_transaction:", type(trans))
         validate_sign = self.verify_signature(trans["signature"], trans["sender_address"], trans["recipient_address"],
                                               trans["value"])
-        print('lol')
+        print("validate sign")
+
         if validate_sign:
             #baraei epeidh mia lista de mporei na mpei mesa se ena set
-            # if set(trans["transaction_inputs"]).intersection(self.wallet.get_UTXOs()[trans["sender_address"]]) == set(
-            #         trans["transaction_inputs"]):
-            self.wallet.update_utxo(trans["sender_address"], trans["transaction_inputs"],
-                                    trans["transaction_outputs"])
-            print("Validate transaction!!!")
-            response = jsonify({"public_key": self.wallet.get_public_key(), "approve": True})
-            # else:
-            #     print("Not validate amount for the transaction!!Scammer find!")
-            #     response = jsonify({"public_key": self.wallet.get_public_key(), "approve": False})
+            trans["transaction_inputs"] = [tuple(inner_list) for inner_list in trans["transaction_inputs"]]
+            if set(trans["transaction_inputs"]).intersection(self.wallet.get_UTXOs()[trans["sender_address"]]) == set(
+                    trans["transaction_inputs"]):
+                self.wallet.update_utxo(trans["sender_address"], trans["transaction_inputs"],
+                                        trans["transaction_outputs"])
+                print("Validate transaction v4!!!")
+                response = jsonify({"public_key": self.wallet.get_public_key(), "approve": True})
+            else:
+                print("Not validate amount for the transaction!!Scammer find!")
+                response = jsonify({"public_key": self.wallet.get_public_key(), "approve": False})
         else:
             print("Not validate sign on the transaction!!Scammer find!")
             response = jsonify({"public_key": self.wallet.get_public_key(), "approve": False})
