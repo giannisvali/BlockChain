@@ -82,7 +82,7 @@ def broadcast_nodes_details():
 
     for cur_key, cur_values in app.config['nodes_details'].items():
         print("CUR KEYYY", cur_key)
-        if str(cur_key) == '1':
+        if str(cur_key) != '0':
             temp_dict = {key: value for key, value in app.config['nodes_details'].items()}
             thread = threading.Thread(target=send_details_to_nodes, args=(temp_dict, cur_key, cur_values, responses))
             threads.append(thread)
@@ -103,7 +103,7 @@ def initial_transaction():
 
     for cur_key, cur_values in app.config['nodes_details'].items():
         #if str(cur_key) != '0':
-        if str(cur_key) == '1':
+        if str(cur_key) != '0':
             print("eimai sto initial transaction")
             wallet_public_key = cur_values[0]
             cur_node.create_transaction(wallet_public_key, 100)

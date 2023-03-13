@@ -211,8 +211,7 @@ class Node:
 
     def send_transaction(self, node_url, trans_dict, responses):
         print("stelnw send transaction")
-        print(trans_dict)
-        print(type(trans_dict))
+
         # trans_dict['sender_address'] = trans_dict['sender_address'].decode('utf-8')
         # trans_dict['recipient_address'] = trans_dict['recipient_address'].decode('utf-8')
         #trans_dict['signature'] = trans_dict['signature'].decode('utf-8')
@@ -225,13 +224,16 @@ class Node:
         threads = []
         responses = []
         # network = main.app.config['nodes_details']
+        print("networkksksk~!", self.network.items())
         for key, values in self.network.items():
-            wallet_public_key, ip_address, port = values
-            print(ip_address, port)
-            node_url = 'http://' + ip_address + ":" + port
-            thread = threading.Thread(target=self.send_transaction, args=(node_url, trans_dict, responses))
-            threads.append(thread)
-            thread.start()
+            if str(key) != str(self.id):
+                print("den apefyga to brodcast toy bootstrap")
+                wallet_public_key, ip_address, port = values
+                print(ip_address, port)
+                node_url = 'http://' + ip_address + ":" + port
+                thread = threading.Thread(target=self.send_transaction, args=(node_url, trans_dict, responses))
+                threads.append(thread)
+                thread.start()
         for thread in threads:
             thread.join()
             # responses.append(thread.result)  #pali edw thelei na to doume,
@@ -267,7 +269,7 @@ class Node:
                     trans["transaction_inputs"]):
                 self.wallet.update_utxo(trans["sender_address"], trans["transaction_inputs"],
                                         trans["transaction_outputs"])
-                print("Validate transaction v4!!!")
+                print("Validate transaction v1!!!")
                 response = jsonify({"public_key": self.wallet.get_public_key(), "approve": True})
             else:
                 print("Not validate amount for the transaction!!Scammer find!")
