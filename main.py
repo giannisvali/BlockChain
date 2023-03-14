@@ -178,8 +178,18 @@ def receive_transaction():
 def receive_block():
     block = request.json
 
-    cur_node.validate_block(block)
-    cur_node.update_blockchain(block)
+    if cur_node.validate_block(block):
+        cur_node.update_blockchain(block)
+        return jsonify({'status': 'success'})
+
+    return jsonify({'status': 'failure'})
+
+    #h ylopoihsh exei ginei me th logikh oti to block einai dictionary kai apothikeyetai ws dictionary sto blockchain
+    #pou einai mia list kai dhmioyrgeitai sthn klash Node. An theloume na ta apothikeyoume ws ibstances ths klashs
+    #Block tote prepei na dhmioyrgoume edw ena instance tou Block xrhsimopoiowntas ta stoixeia tou dictionary block pou
+    #pairnoume se ayth th synarthsh.
+
+
     # validte block
     # add block to chain
     # app.config['nodes_details'] = all_details
@@ -188,7 +198,6 @@ def receive_block():
     # wallet_public_key, ip_address, port = app.config['nodes_details']['0']  #bootstrap node details
     # cur_node.wallet.update_utxo(wallet_public_key, [],
     #  [(0, 0, wallet_public_key, 100 * no_nodes)]) #sender, transaction_input, transaction_output)
-    return jsonify({'status': 'success'})
 
 
 if __name__ == '__main__':

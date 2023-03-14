@@ -311,9 +311,13 @@ class Node:
 
     def validate_block(self, block):
 
-        return not (block['hash'][0:self.difficulty] != '0'*self.difficulty) or (self.blockchain[-1].get_previousHash()!=block['previousHash'])
+        #return not (block['hash'][0:self.difficulty] != '0'*self.difficulty) or (self.blockchain[-1].get_previousHash()!=block['previousHash'])
+        return not ((block['hash'][0:self.difficulty] != '0' * self.difficulty)\
+               or (self.blockchain[-1]["previousHash"] != block['previousHash']
+                   or block['index'] in self.blockchain))
 
-
+    def update_blockchain(self, block):
+        self.blockchain.append(block)
 # def mine_block(self):
 #     mined_block = self.blockchain.get_mined_block()
 #     # check if chain's last block remains the same - maybe block added by another node
