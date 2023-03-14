@@ -279,10 +279,33 @@ class Node:
             response = jsonify({"public_key": self.wallet.get_public_key(), "approve": False})
         return response
 
-#     def add_transaction_to_block():
-#
-#     # if enough transactions  mine
-#
+    def send_block(self, node_url, mined_block, responses):
+        # block to json
+        # use proper endpoint
+        response = requests.post(node_url + '/', json=mined_block)
+        print("send block response:", response, flush=True)
+        responses.append((response.json(), node_url))
+
+    def broadcast_block(self, mined_block):
+        threads = []
+        responses = []
+        for key, values in self.network.items():
+            if str(key) != str(self.id):
+                wallet_public_key, ip_address, port = values
+                print(ip_address, port)
+                node_url = 'http://' + ip_address + ":" + port
+                thread = threading.Thread(target=self.send_block(), args=(node_url, mined_block, responses))
+                threads.append(thread)
+                thread.start()
+
+    def mine_block(self):
+        if self.blockchain.get_unmined_transactions() >= self.blockchain.capacity:
+            mined_block = self.blockchain.get_mined_block()
+            # check if chain's last block remains the same - maybe block added by another node
+            if mined_block.previousHash == self.blockchain.get_last_block_hash():
+                self.blockchain.add_block_to_chain(mined_block)
+                self.broadcast_block(mined_block)
+
 # def mine_block(self):
 #     mined_block = self.blockchain.get_mined_block()
 #     # check if chain's last block remains the same - maybe block added by another node
