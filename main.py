@@ -174,6 +174,21 @@ def receive_transaction():
     return cur_node.validate_transaction(transaction_details)
     # return jsonify({'status': 'success'})
 
+@app.route('/receive-block', methods=['POST'])
+def receive_block():
+    block = request.json
+
+    cur_node.validate_block(block)
+    cur_node.update_blockchain(block)
+    # validte block
+    # add block to chain
+    # app.config['nodes_details'] = all_details
+    # cur_node.set_network(app.config['nodes_details'])
+    # print("APP CONFIG:", app.config['nodes_details'])
+    # wallet_public_key, ip_address, port = app.config['nodes_details']['0']  #bootstrap node details
+    # cur_node.wallet.update_utxo(wallet_public_key, [],
+    #  [(0, 0, wallet_public_key, 100 * no_nodes)]) #sender, transaction_input, transaction_output)
+    return jsonify({'status': 'success'})
 
 
 if __name__ == '__main__':
@@ -205,7 +220,7 @@ if __name__ == '__main__':
     print(no_nodes)
 
     global cur_node
-    cur_node = Node(ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, blockchain_snapshot=None,
+    cur_node = Node(ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, difficulty, blockchain_snapshot=None,
                 key_length=2048)
     app.run(host='0.0.0.0', port=app_port)#, debug=True)
 

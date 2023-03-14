@@ -18,15 +18,17 @@ from flask import jsonify
 
 
 class Node:
-    def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, blockchain_snapshot=None,
+    def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, difficulty, blockchain_snapshot=None,
                  key_length=2048):
 
         self.ip_address = ip_address
         self.port = port
         self.no_nodes = no_nodes
-        print(self.no_nodes)
-        print(self.port)
         self.network = dict()
+
+
+        self.difficulty = difficulty
+        self.blockchain = []
 
         self.bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
         self.wallet = self.generate_wallet(key_length)
@@ -282,11 +284,11 @@ class Node:
     def send_block(self, node_url, mined_block, responses):
         # block to json
         # use proper endpoint
-        response = requests.post(node_url + '/', json=mined_block)
+        response = requests.post(node_url + '/receive-block', json=mined_block)
         print("send block response:", response, flush=True)
         responses.append((response.json(), node_url))
 
-    def broadcast_block(self, mined_block):
+    def broadcast_block(self, mined_block): #to mined_block mhpws na einai dict kalytera?? eftiaxa thn antistoixh synarthsh metatrophs sto block.py
         threads = []
         responses = []
         for key, values in self.network.items():
@@ -294,7 +296,7 @@ class Node:
                 wallet_public_key, ip_address, port = values
                 print(ip_address, port)
                 node_url = 'http://' + ip_address + ":" + port
-                thread = threading.Thread(target=self.send_block(), args=(node_url, mined_block, responses))
+                thread = threading.Thread(target=self.send_block, args=(node_url, mined_block, responses))
                 threads.append(thread)
                 thread.start()
 
@@ -305,6 +307,12 @@ class Node:
             if mined_block.previousHash == self.blockchain.get_last_block_hash():
                 self.blockchain.add_block_to_chain(mined_block)
                 self.broadcast_block(mined_block)
+
+
+    def validate_block(self, block):
+
+        return not (block['hash'][0:self.difficulty] != '0'*self.difficulty) or (self.blockchain[-1].get_previousHash()!=block['previousHash'])
+
 
 # def mine_block(self):
 #     mined_block = self.blockchain.get_mined_block()

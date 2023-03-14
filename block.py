@@ -2,6 +2,7 @@
 import datetime
 import time
 import hashlib
+from collections import OrderedDict
 
 
 class Block:
@@ -12,6 +13,11 @@ class Block:
         self.listOfTransactions = transactions
         self.nonce = 0
         self.hash = self.my_hash()
+
+
+
+    def get_previousHash(self):
+        return self.previousHash
 
     # calculates hash of the block using nonce, its transactions, prev hash and timestamp
     def my_hash(self):
@@ -44,6 +50,11 @@ class Block:
                     self.nonce,
                     "\n".join(str(x) for x in self.listOfTransactions)))
 
-# if __name__ == '__main__':
-#     block = Block(1,[1,2,3],'23hgf5')
-#     block.mine(2)
+
+    def to_dict(self):
+        return OrderedDict({'index': self.index,
+                            'previousHash': self.previousHash,
+                            'timestamp': self.timestamp,
+                            'listOfTransactions': self.listOfTransactions,
+                            'nonce': self.nonce,
+                            'hash': self.hash})
