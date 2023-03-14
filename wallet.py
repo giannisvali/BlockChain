@@ -1,10 +1,10 @@
 import binascii
 
-import Crypto
-import Crypto.Random
-from Crypto.Hash import SHA
-from Crypto.PublicKey import RSA
-from Crypto.Signature import PKCS1_v1_5
+# import Crypto
+# import Crypto.Random
+# from Crypto.Hash import SHA
+# from Crypto.PublicKey import RSA
+# from Crypto.Signature import PKCS1_v1_5
 
 import hashlib
 import json
@@ -27,15 +27,24 @@ class Wallet:
 		# self.transactions
 
 	def update_utxo(self, sender, transaction_input, transaction_output):
+		print("UPDATE UTXOOO")
+		mphka = False
 		for item in transaction_input:
 			if item in self.UTXOs[sender]:
-				self.UTXOs[sender].remove(item)
+				if len(self.UTXOs[sender]) == 1:
+					self.UTXOs[sender] = []
+				else:
+					self.UTXOs[sender].remove(item)
+
+
 		for transaction_output_id, transaction_id, address, amount in transaction_output:
-			if address not in self.UTXOs:
+			print("boolean check:", address == sender)
+			if address not in self.UTXOs :
 				self.UTXOs[address] = [(transaction_output_id, amount)] #apla ebala to id tou output anti gia to id tou transaction
 			else:
-				self.UTXOs[address] = self.UTXOs[address].append((transaction_output_id, amount))
+				self.UTXOs[address].append((transaction_output_id, amount))
 
+		print("TELIKO UTXOS:", self.UTXOs)
 	def get_public_key(self):
 		return self.public_key
 
