@@ -13,9 +13,8 @@ import threading
 import base64
 import binascii
 from transaction import *
-from flask_cors import CORS
 from flask import jsonify
-
+from blockchain import Blockchain
 
 class Node:
     def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, blockchain_snapshot=None,
@@ -27,7 +26,7 @@ class Node:
         print(self.no_nodes)
         print(self.port)
         self.network = dict()
-
+        self.blockchain = Blockchain()
         self.bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
         self.wallet = self.generate_wallet(key_length)
 
@@ -283,12 +282,33 @@ class Node:
 #
 #     # if enough transactions  mine
 #
-# def mine_block(self):
-#     mined_block = self.blockchain.get_mined_block()
-#     # check if chain's last block remains the same - maybe block added by another node
-#     if mined_block.previousHash == self.blockchain.get_last_block_hash():
-#         self.blockchain.add_block_to_chain(mined_block)
-#         # self.broadcast_block(mined_block)
+
+    def send_block(self, node_url, mined_block, responses):
+        # block to json
+        # use proper endpoint
+        response = requests.post(node_url + '/', json=mined_block)
+        print("send block response:", response, flush=True)
+        responses.append((response.json(), node_url))
+
+    def broadcast_block(self, mined_block):
+        threads = []
+        responses = []
+        for key, values in self.network.items():
+            if str(key) != str(self.id):
+                wallet_public_key, ip_address, port = values
+                print(ip_address, port)
+                node_url = 'http://' + ip_address + ":" + port
+                thread = threading.Thread(target=self.send_block(), args=(node_url, mined_block, responses))
+                threads.append(thread)
+                thread.start()
+
+    def mine_block(self):
+        if self.blockchain.get_unmined_transactions() >= self.blockchain.capacity:
+            mined_block = self.blockchain.get_mined_block()
+            # check if chain's last block remains the same - maybe block added by another node
+            if mined_block.previousHash == self.blockchain.get_last_block_hash():
+                self.blockchain.add_block_to_chain(mined_block)
+                self.broadcast_block(mined_block)
 #
 #     def broadcast_block():
 #

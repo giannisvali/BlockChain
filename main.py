@@ -67,6 +67,19 @@ def receive_network():
      [(0, 0, wallet_public_key, 100 * no_nodes)]) #sender, transaction_input, transaction_output)
     return jsonify({'status': 'success'})
 
+@app.route('/receive-block', methods=['POST'])
+def receive_block():
+    block = request.json
+    # validte block
+    # add block to chain
+    # app.config['nodes_details'] = all_details
+    # cur_node.set_network(app.config['nodes_details'])
+    # print("APP CONFIG:", app.config['nodes_details'])
+    # wallet_public_key, ip_address, port = app.config['nodes_details']['0']  #bootstrap node details
+    # cur_node.wallet.update_utxo(wallet_public_key, [],
+    #  [(0, 0, wallet_public_key, 100 * no_nodes)]) #sender, transaction_input, transaction_output)
+    return jsonify({'status': 'success'})
+
 
 def send_details_to_nodes(rest_nodes_details, node_id, cur_node_details,  responses):
     wallet_public_key, ip_address, port = cur_node_details

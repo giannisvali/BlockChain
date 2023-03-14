@@ -37,6 +37,9 @@ class Blockchain:
         block_to_mine.mine(self.difficulty)
         return block_to_mine
 
+    def get_unmined_transactions(self):
+        return self.transactions_unmined
+
     def __str__(self):
         return (''.join(str(b) for b in self.chain))
 
