@@ -313,8 +313,8 @@ class Node:
 
         #return not (block['hash'][0:self.difficulty] != '0'*self.difficulty) or (self.blockchain[-1].get_previousHash()!=block['previousHash'])
         return not ((block['hash'][0:self.difficulty] != '0' * self.difficulty)\
-               or (self.blockchain[-1]["hash"] != block['previousHash']
-                   or block['index'] in self.blockchain))
+               or (self.blockchain[-1]["hash"] != block['previousHash'])
+                   or (block['index'] in self.blockchain))
 
     def update_blockchain(self, block):
         self.blockchain.append(block)
