@@ -67,18 +67,30 @@ def receive_network():
      [(0, 0, wallet_public_key, 100 * no_nodes)]) #sender, transaction_input, transaction_output)
     return jsonify({'status': 'success'})
 
+
 @app.route('/receive-block', methods=['POST'])
 def receive_block():
-    block = request.json
-    # validte block
-    # add block to chain
-    # app.config['nodes_details'] = all_details
-    # cur_node.set_network(app.config['nodes_details'])
-    # print("APP CONFIG:", app.config['nodes_details'])
-    # wallet_public_key, ip_address, port = app.config['nodes_details']['0']  #bootstrap node details
-    # cur_node.wallet.update_utxo(wallet_public_key, [],
-    #  [(0, 0, wallet_public_key, 100 * no_nodes)]) #sender, transaction_input, transaction_output)
-    return jsonify({'status': 'success'})
+    block_dict = request.json
+    block = Block(index=block_dict['index'], timestamp=block_dict['timestamp'], transactions=block_dict['transactions'],
+                  nonce=block_dict['nonce'], previousHash=block_dict['previous_hash'], hash=block_dict['hash'])
+    if block.previousHash == cur_node.blockchain.get_last_block_hash():
+        if cur_node.validate_block(block):
+            cur_node.blockchain.add_block(block)
+            response = jsonify({'message': 'Node {} added block to blockchain'.format(cur_node.id)})
+            return response, 200
+        else:
+            response = {'message': 'Block rejected from {} - hash is not valid'.format(cur_node.id)}
+            return jsonify(response), 400
+        #periptwsi conflict: ean to previous hash tou block den uparxei sthn alysida
+        #etsi diaxwrizetai apo thn periptwsi tis deuterhs afiksis block apo ton tautoxrono miner
+    elif cur_node.validate_block(block) and not(cur_node.blockchain.hash_exists_in_chain(block.previous_hash)):
+        #TODO: Thread needed?
+        cur_node.resolve_conflict()
+        response = {'message': 'Resolving Conflict'}
+        return jsonify(response), 200
+    else:
+        response = jsonify({'message': 'Block rejected from {} - previous hash not the same - second block received from simultaneous miner'.format(cur_node.id)})
+        return response, 400
 
 
 def send_details_to_nodes(rest_nodes_details, node_id, cur_node_details,  responses):

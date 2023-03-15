@@ -8,7 +8,7 @@ class Blockchain:
         self.difficulty = 4
         self.capacity = capacity
         self.transactions_unmined = []  # keep list of transactions not mined yet
-        # self.Hash_set = set()
+        self.transactions_to_mine = []
 
     # insert block to chain
     def add_block(self, block):
@@ -31,14 +31,21 @@ class Blockchain:
     # returns the mined block
     def get_mined_block(self):
         block_to_mine_index = len(self.chain)
-        block_to_mine_transactions = self.transactions_unmined[0:self.capacity]
-        block_to_mine = Block(block_to_mine_index, block_to_mine_transactions, self.get_last_block_hash())
+        self.transactions_to_mine = self.transactions_unmined[0:self.capacity]
+        block_to_mine = Block(block_to_mine_index, self.transactions_to_mine, self.get_last_block_hash())
         self.transactions_unmined = self.transactions_unmined[self.capacity:]  # update transactions not yet mined
         block_to_mine.mine(self.difficulty)
         return block_to_mine
 
     def get_unmined_transactions(self):
         return self.transactions_unmined
+
+    def hash_exists_in_chain(self, hash):
+        for block in self.chain:
+            if block.hash == hash:
+                return True
+        return False
+
 
     def __str__(self):
         return (''.join(str(b) for b in self.chain))
@@ -52,5 +59,6 @@ class Blockchain:
 #         blockchain.add_transaction(i)
 #     block1 = blockchain.get_mined_block()
 #     blockchain.add_block(block1)
+#     blockchain.hash_exists_in_chain(block1.hash)
 #     print(blockchain)
 #     print(blockchain.transactions_unmined)

@@ -5,13 +5,14 @@ import hashlib
 
 
 class Block:
-    def __init__(self, index, transactions, previousHash=''):
+    def __init__(self, index, transactions, previousHash='', nonce=0,
+                 timestamp=datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), hash=None):
         self.index = index
         self.previousHash = previousHash
-        self.timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+        self.timestamp = timestamp
         self.listOfTransactions = transactions
-        self.nonce = 0
-        self.hash = self.my_hash()
+        self.nonce = nonce
+        self.hash = self.my_hash() if hash is None else hash
 
     # calculates hash of the block using nonce, its transactions, prev hash and timestamp
     def my_hash(self):
@@ -34,9 +35,18 @@ class Block:
             self.hash = self.my_hash()
         print('mining finished with hash {} and nonce {}'.format(self.hash, self.nonce))
 
+    def to_dict(self):
+        return {
+            'index': self.index,
+            'previous_hash': self.previousHash,
+            'timestamp': self.timestamp,
+            'transactions': self.listOfTransactions,
+            'nonce': self.nonce,
+            'hash': self.hash
+        }
+
     def __str__(self):
-        return ("\n---------------BLOCK-----------------------\n"
-                + "Index: {}\nPreviousHash: {}\nTimestamp: {}\nHash: {}\nNonce: {}\nTransactions: {}".format(
+        return ("Index: {}\nPreviousHash: {}\nTimestamp: {}\nHash: {}\nNonce: {}\nTransactions: {}".format(
                     self.index,
                     self.previousHash,
                     self.timestamp,

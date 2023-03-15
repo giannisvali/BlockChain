@@ -15,6 +15,7 @@ import binascii
 from transaction import *
 from flask import jsonify
 from blockchain import Blockchain
+from block import Block
 
 class Node:
     def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, blockchain_snapshot=None,
@@ -26,6 +27,7 @@ class Node:
         print(self.no_nodes)
         print(self.port)
         self.network = dict()
+        #TODO: pass capaity to blockchain
         self.blockchain = Blockchain()
         self.bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
         self.wallet = self.generate_wallet(key_length)
@@ -286,7 +288,7 @@ class Node:
     def send_block(self, node_url, mined_block, responses):
         # block to json
         # use proper endpoint
-        response = requests.post(node_url + '/', json=mined_block)
+        response = requests.post(node_url + '/receive-block', json=mined_block.to_dict())
         print("send block response:", response, flush=True)
         responses.append((response.json(), node_url))
 
@@ -303,14 +305,33 @@ class Node:
                 thread.start()
 
     def mine_block(self):
-        if self.blockchain.get_unmined_transactions() >= self.blockchain.capacity:
+        # TODO: prepei na elegxoume an ginetai mining hdh?
+        if len(self.blockchain.get_unmined_transactions()) >= self.blockchain.capacity:
             mined_block = self.blockchain.get_mined_block()
             # check if chain's last block remains the same - maybe block added by another node
             if mined_block.previousHash == self.blockchain.get_last_block_hash():
-                self.blockchain.add_block_to_chain(mined_block)
+                # TODO: define order of block addition and broadcasting
+                self.blockchain.add_block(mined_block)
                 self.broadcast_block(mined_block)
-#
-#     def broadcast_block():
+
+
+    def validate_block(self, incoming_block):
+        expected_transactions = self.blockchain.transactions_to_mine if len(
+            self.blockchain.transactions_to_mine) > 0 else self.blockchain.transactions_unmined[
+                                                           0:self.blockchain.capacity]
+        temp_block = Block(len(self.blockchain.chain), expected_transactions, self.blockchain.get_last_block_hash(),
+                           incoming_block.nonce, incoming_block.timestamp)
+        expected_hash = temp_block.hash
+        temp_incoming_block = Block(incoming_block.index, incoming_block.listOfTransactions, incoming_block.previousHash,
+                               incoming_block.nonce, incoming_block.timestamp)
+        return expected_hash == temp_incoming_block.hash
+
+    def resolve_conflict(self):
+        print('Resolve conflict')
+
+
+    #validate_chain: mono otan o node prwtoeiserxetai sto diktyo
+  #  def validate_chain(self):
 #
 #     def valid_proof(.., difficulty=MINING_DIFFICULTY):
 #
@@ -322,3 +343,18 @@ class Node:
 #
 #     def resolve_conflicts(self):
 # # resolve correct chain
+# if __name__ == '__main__':
+#
+#     cur_node = Node(ip_address='127.0.0.1', port='5000', bootstrap_ip_address='127.0.0.1', bootstrap_port='5000', no_nodes=1, blockchain_snapshot=None,
+#                 key_length=2048)
+#
+#     # genesis block
+#     block1 = Block(1,[00,80,99,99,11],'96ca629907f4b879e02f004a3df1bebb3e37b4d289e633b6d9fc200ead835d12')
+#     cur_node.blockchain.add_block(block1)
+#     cur_node.send_block('http://127.0.0.1:5000', block1,[])
+#     # for i in range(8):
+#     #     cur_node.blockchain.add_transaction(i)
+#     # block1 = cur_node.blockchain.get_mined_block()
+#     # cur_node.blockchain.add_block(block1)
+#     # cur_node.mine_block()
+
