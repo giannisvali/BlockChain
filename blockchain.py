@@ -29,12 +29,12 @@ class Blockchain:
     # kathe fora pou simplironontai capacity transactions
     # creates new block, updates list of transactions not mined and starts mining
     # returns the mined block
-    def get_mined_block(self):
+    def get_mined_block(self, chain_length):
         block_to_mine_index = len(self.chain)
         self.transactions_to_mine = self.transactions_unmined[0:self.capacity]
         block_to_mine = Block(block_to_mine_index, self.transactions_to_mine, self.get_last_block_hash())
         self.transactions_unmined = self.transactions_unmined[self.capacity:]  # update transactions not yet mined
-        block_to_mine.mine(self.difficulty)
+        block_to_mine.mine(self.difficulty, chain_length, self.chain)
         return block_to_mine
 
     def get_unmined_transactions(self):

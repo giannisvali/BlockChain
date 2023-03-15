@@ -27,13 +27,19 @@ class Block:
         )
         return hash.hexdigest()
 
-    def mine(self, difficulty):
+    def mine(self, difficulty, chain_length, chain):
         difficulty_zeros = '0' * difficulty
+        print('initial chain length {}'.format(chain_length))
+        print('initial chain {}'.format(chain))
         print('mining started')
         while self.hash[0:difficulty] != difficulty_zeros:
             self.nonce += 1
             self.hash = self.my_hash()
-        print('mining finished with hash {} and nonce {}'.format(self.hash, self.nonce))
+            if chain_length < len(chain):
+                print('Mining stopped')
+                return
+
+        print('mining successful : finished with hash {} and nonce {}'.format(self.hash, self.nonce))
 
     def to_dict(self):
         return {

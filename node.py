@@ -307,8 +307,10 @@ class Node:
 
     def mine_block(self):
         # TODO: prepei na elegxoume an ginetai mining hdh?
+        # TODO: h get_mined_block mhpws prepei na kaleitai apo thread?
         if len(self.blockchain.get_unmined_transactions()) >= self.blockchain.capacity:
-            mined_block = self.blockchain.get_mined_block()
+            current_chain_length = len(self.blockchain.chain)
+            mined_block = self.blockchain.get_mined_block(chain_length=current_chain_length)
             # check if chain's last block remains the same - maybe block added by another node
             if mined_block.previousHash == self.blockchain.get_last_block_hash():
                 # TODO: define order of block addition and broadcasting
@@ -345,17 +347,26 @@ class Node:
 #     def resolve_conflicts(self):
 # # resolve correct chain
 # if __name__ == '__main__':
-#
-#     cur_node = Node(ip_address='127.0.0.1', port='5000', bootstrap_ip_address='127.0.0.1', bootstrap_port='5000', no_nodes=1, blockchain_snapshot=None,
+#     import time
+#     cur_node = Node(ip_address='127.0.0.1', port='5000', bootstrap_ip_address='127.0.0.1', bootstrap_port='5000', no_nodes=1, capacity=3, difficulty=10, blockchain_snapshot=None,
 #                 key_length=2048)
 #
 #     # genesis block
 #     block1 = Block(1,[00,80,99,99,11],'96ca629907f4b879e02f004a3df1bebb3e37b4d289e633b6d9fc200ead835d12')
 #     cur_node.blockchain.add_block(block1)
-#     cur_node.send_block('http://127.0.0.1:5000', block1,[])
-#     # for i in range(8):
-#     #     cur_node.blockchain.add_transaction(i)
-#     # block1 = cur_node.blockchain.get_mined_block()
-#     # cur_node.blockchain.add_block(block1)
-#     # cur_node.mine_block()
+#    # cur_node.send_block('http://127.0.0.1:5000', block1,[])
+#     for i in range(8):
+#         cur_node.blockchain.add_transaction(i)
+#     chain_length = len(cur_node.blockchain.chain)
+#     thread = threading.Thread(target=cur_node.blockchain.get_mined_block, args=([chain_length]))
+#     thread.start()
+#     #block2 = cur_node.blockchain.get_mined_block()
+#     #cur_node.blockchain.add_block(block2)
+#     print('add block3')
+#     time.sleep(3)
+#     block3 = Block(3,[00,80,99,99,11],'96ca629907f4b879e02f004a3df1bebb3e37b4d289e633b6d9fc200ead835d12')
+#     cur_node.blockchain.add_block(block3)
+#     print(cur_node.blockchain.chain)
+#     print('prostethke to 3')
+    #cur_node.mine_block()
 
