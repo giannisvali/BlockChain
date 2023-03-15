@@ -301,7 +301,7 @@ class Node:
                 wallet_public_key, ip_address, port = values
                 print(ip_address, port)
                 node_url = 'http://' + ip_address + ":" + port
-                thread = threading.Thread(target=self.send_block(), args=(node_url, mined_block, responses))
+                thread = threading.Thread(target=self.send_block, args=(node_url, mined_block, responses))
                 threads.append(thread)
                 thread.start()
 
