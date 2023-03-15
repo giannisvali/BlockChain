@@ -209,7 +209,7 @@ if __name__ == '__main__':
     parser.add_argument('--bootstrap_port', default='5000', type=str)
     parser.add_argument('--is_bootstrap', type=int, choices=[0, 1], default=0)
     # parser.add_argument('--capacity', default=5000, type=positive_int)
-    parser.add_argument('--capacity', default='5000', type=int)
+    parser.add_argument('--capacity', default=4, type=int)
     parser.add_argument('--difficulty', default=3, type=int)
     parser.add_argument('--no_nodes', default=3, type=int)
     parser.add_argument('--app_port', default=5000, type = int)
@@ -230,7 +230,7 @@ if __name__ == '__main__':
     print(no_nodes)
 
     global cur_node
-    cur_node = Node(ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, blockchain_snapshot=None,
+    cur_node = Node(ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, capacity, difficulty, blockchain_snapshot=None,
                 key_length=2048)
     app.run(host='0.0.0.0', port=app_port)#, debug=True)
 

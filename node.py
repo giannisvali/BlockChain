@@ -18,7 +18,8 @@ from blockchain import Blockchain
 from block import Block
 
 class Node:
-    def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, blockchain_snapshot=None,
+    def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, capacity, difficulty,
+                 blockchain_snapshot=None,
                  key_length=2048):
 
         self.ip_address = ip_address
@@ -28,7 +29,7 @@ class Node:
         print(self.port)
         self.network = dict()
         #TODO: pass capaity to blockchain
-        self.blockchain = Blockchain()
+        self.blockchain = Blockchain(capacity=capacity, difficulty=difficulty)
         self.bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
         self.wallet = self.generate_wallet(key_length)
 

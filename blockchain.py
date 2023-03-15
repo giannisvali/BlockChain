@@ -3,9 +3,9 @@ from block import Block
 
 class Blockchain:
 
-    def __init__(self, capacity=5):
+    def __init__(self, capacity=5, difficulty=3):
         self.chain = []  # keep list of blocks
-        self.difficulty = 4
+        self.difficulty = difficulty
         self.capacity = capacity
         self.transactions_unmined = []  # keep list of transactions not mined yet
         self.transactions_to_mine = []
