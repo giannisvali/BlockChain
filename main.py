@@ -71,8 +71,12 @@ def receive_network():
 @app.route('/receive-block', methods=['POST'])
 def receive_block():
     block_dict = request.json
+    # create block object from dictionary received
     block = Block(index=block_dict['index'], timestamp=block_dict['timestamp'], transactions=block_dict['transactions'],
                   nonce=block_dict['nonce'], previousHash=block_dict['previous_hash'], hash=block_dict['hash'])
+    # if mined block previous hash = node's last block's hash and hash of mined block is valid --> add block else reject
+    # if mined block previous hash != node's last block's hash : node received block from other miner - 2nd block
+    # if mined block is valid but its previous hash is not contained in chain: conflict, not 2nd block from 2nd miner
     if block.previousHash == cur_node.blockchain.get_last_block_hash():
         if cur_node.validate_block(block):
             cur_node.blockchain.add_block(block)
@@ -84,7 +88,7 @@ def receive_block():
         #periptwsi conflict: ean to previous hash tou block den uparxei sthn alysida
         #etsi diaxwrizetai apo thn periptwsi tis deuterhs afiksis block apo ton tautoxrono miner
     elif cur_node.validate_block(block) and not(cur_node.blockchain.hash_exists_in_chain(block.previous_hash)):
-        #TODO: Thread needed?
+        #TODO: Thread needed?, asks for chain every node, mporei kai oxi
         cur_node.resolve_conflict()
         response = {'message': 'Resolving Conflict'}
         return jsonify(response), 200

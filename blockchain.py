@@ -30,12 +30,20 @@ class Blockchain:
     # creates new block, updates list of transactions not mined and starts mining
     # returns the mined block
     def get_mined_block(self, chain_length):
+        # index of the new block ( end of chain)
         block_to_mine_index = len(self.chain)
+        # from transactions not mined yet keep first "capacity" of them
         self.transactions_to_mine = self.transactions_unmined[0:self.capacity]
-        block_to_mine = Block(block_to_mine_index, self.transactions_to_mine, self.get_last_block_hash())
-        self.transactions_unmined = self.transactions_unmined[self.capacity:]  # update transactions not yet mined
-        block_to_mine.mine(self.difficulty, chain_length, self.chain)
-        return block_to_mine
+        # create block with transactions_to_mine
+        block_to_mine = Block(index=block_to_mine_index, transactions=self.transactions_to_mine, previousHash=self.get_last_block_hash())
+        # update transactions not yet mined
+        self.transactions_unmined = self.transactions_unmined[self.capacity:]
+        # start block mining, pass as arg chain length calculated and chain of node
+        mining_completed = block_to_mine.mine(self.difficulty, chain_length, self.chain)
+        if mining_completed:
+            return block_to_mine
+        else:
+            return None
 
     def get_unmined_transactions(self):
         return self.transactions_unmined

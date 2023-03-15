@@ -17,7 +17,7 @@ class Block:
     # calculates hash of the block using nonce, its transactions, prev hash and timestamp
     def my_hash(self):
         hash = hashlib.sha256()
-        # TODO: consider addition of __str__ in transaction class
+        # TODO: consider possible changes depending on type of transaction (Transaction vs dictionary)
         data = ''.join(str(x) for x in self.listOfTransactions)
         hash.update(
             str(self.nonce).encode('utf-8') +
@@ -32,14 +32,18 @@ class Block:
         print('initial chain length {}'.format(chain_length))
         print('initial chain {}'.format(chain))
         print('mining started')
+        # check if first difficulty characters of hash are zeros
         while self.hash[0:difficulty] != difficulty_zeros:
             self.nonce += 1
             self.hash = self.my_hash()
+            # compare initial chain length with current chain length
+            # if chain length greater another node mined the block --> stop mining
             if chain_length < len(chain):
-                print('Mining stopped')
-                return
+                print('Mining stopped, another node mined the block')
+                return False #stopped
 
         print('mining successful : finished with hash {} and nonce {}'.format(self.hash, self.nonce))
+        return True #completed
 
     def to_dict(self):
         return {

@@ -289,6 +289,7 @@ class Node:
     def send_block(self, node_url, mined_block, responses):
         # block to json
         # use proper endpoint
+        # send block as dictionary containing its details
         response = requests.post(node_url + '/receive-block', json=mined_block.to_dict())
         print("send block response:", response, flush=True)
         responses.append((response.json(), node_url))
@@ -296,6 +297,7 @@ class Node:
     def broadcast_block(self, mined_block):
         threads = []
         responses = []
+        # broadcast mined block to every node of the network
         for key, values in self.network.items():
             if str(key) != str(self.id):
                 wallet_public_key, ip_address, port = values
@@ -307,26 +309,37 @@ class Node:
 
     def mine_block(self):
         # TODO: prepei na elegxoume an ginetai mining hdh?
-        # TODO: h get_mined_block mhpws prepei na kaleitai apo thread?
+        # TODO: h get_mined_block mhpws prepei na kaleitai apo thread? upoloipes entoles mhpws prepei na ektelstoun
+        # check if unmined transactions have exceeded capacity
         if len(self.blockchain.get_unmined_transactions()) >= self.blockchain.capacity:
             current_chain_length = len(self.blockchain.chain)
+            # calculate current chain length and pass it as arg to get_mined_block --> mine
             mined_block = self.blockchain.get_mined_block(chain_length=current_chain_length)
-            # check if chain's last block remains the same - maybe block added by another node
-            if mined_block.previousHash == self.blockchain.get_last_block_hash():
+            # check if chain's last block remains the same - maybe block added by another node, additional check
+            # and check if mined_block is not None - if None node did not complete mining and stopped
+            # else node mined a block and broadcast it to the network
+            if mined_block is not None and mined_block.previousHash == self.blockchain.get_last_block_hash():
                 # TODO: define order of block addition and broadcasting
                 self.blockchain.add_block(mined_block)
                 self.broadcast_block(mined_block)
 
 
     def validate_block(self, incoming_block):
+        # checks if hash is valid
+        # case where transactions_to_mine have not been created yet
+        # expected transactions = those that node would mine, and expects to be mined by others
         expected_transactions = self.blockchain.transactions_to_mine if len(
-            self.blockchain.transactions_to_mine) > 0 else self.blockchain.transactions_unmined[
-                                                           0:self.blockchain.capacity]
+            self.blockchain.transactions_to_mine) > 0 else self.blockchain.transactions_unmined[0:self.blockchain.capacity]
+        # temp block contains:next index expected,expected transactions,expected previous hash,
+        # incoming block's nonce, incoming block's timestamp
         temp_block = Block(len(self.blockchain.chain), expected_transactions, self.blockchain.get_last_block_hash(),
                            incoming_block.nonce, incoming_block.timestamp)
+        #calculate expected hash
         expected_hash = temp_block.hash
+        # recalculate incoming block's hash, in case its wrong
         temp_incoming_block = Block(incoming_block.index, incoming_block.listOfTransactions, incoming_block.previousHash,
                                incoming_block.nonce, incoming_block.timestamp)
+        # compare expected hash to incoming block's hash, if True block is valid
         return expected_hash == temp_incoming_block.hash
 
     def resolve_conflict(self):
