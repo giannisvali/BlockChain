@@ -3,12 +3,12 @@ from block import Block
 
 class Blockchain:
 
-    def __init__(self, capacity=5):
+    def __init__(self, capacity=5, difficulty=3):
         self.chain = []  # keep list of blocks
-        self.difficulty = 4
+        self.difficulty = difficulty
         self.capacity = capacity
         self.transactions_unmined = []  # keep list of transactions not mined yet
-        # self.Hash_set = set()
+        self.transactions_to_mine = []
 
     # insert block to chain
     def add_block(self, block):
@@ -29,13 +29,31 @@ class Blockchain:
     # kathe fora pou simplironontai capacity transactions
     # creates new block, updates list of transactions not mined and starts mining
     # returns the mined block
-    def get_mined_block(self):
+    def get_mined_block(self, chain_length):
+        # index of the new block ( end of chain)
         block_to_mine_index = len(self.chain)
-        block_to_mine_transactions = self.transactions_unmined[0:self.capacity]
-        block_to_mine = Block(block_to_mine_index, block_to_mine_transactions, self.get_last_block_hash())
-        self.transactions_unmined = self.transactions_unmined[self.capacity:]  # update transactions not yet mined
-        block_to_mine.mine(self.difficulty)
-        return block_to_mine
+        # from transactions not mined yet keep first "capacity" of them
+        self.transactions_to_mine = self.transactions_unmined[0:self.capacity]
+        # create block with transactions_to_mine
+        block_to_mine = Block(index=block_to_mine_index, transactions=self.transactions_to_mine, previousHash=self.get_last_block_hash())
+        # update transactions not yet mined
+        self.transactions_unmined = self.transactions_unmined[self.capacity:]
+        # start block mining, pass as arg chain length calculated and chain of node
+        mining_completed = block_to_mine.mine(self.difficulty, chain_length, self.chain)
+        if mining_completed:
+            return block_to_mine
+        else:
+            return None
+
+    def get_unmined_transactions(self):
+        return self.transactions_unmined
+
+    def hash_exists_in_chain(self, hash):
+        for block in self.chain:
+            if block.hash == hash:
+                return True
+        return False
+
 
     def __str__(self):
         return (''.join(str(b) for b in self.chain))
@@ -49,5 +67,6 @@ class Blockchain:
 #         blockchain.add_transaction(i)
 #     block1 = blockchain.get_mined_block()
 #     blockchain.add_block(block1)
+#     blockchain.hash_exists_in_chain(block1.hash)
 #     print(blockchain)
 #     print(blockchain.transactions_unmined)

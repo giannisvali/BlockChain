@@ -7,6 +7,7 @@ from node import *
 from flask_cors import CORS
 from flask import jsonify, Response
 import threading
+import jsonpickle
 import base64
 #aaaaaaaaaa
 app = Flask(__name__)
@@ -117,6 +118,40 @@ def receive_network():
     cur_node.wallet.update_utxo(wallet_public_key, [],
      [(0, 0, wallet_public_key, 100 * no_nodes)]) #sender, transaction_input, transaction_output)
     return jsonify({'status': 'success'})
+
+
+@app.route('/receive-block', methods=['POST'])
+def receive_block():
+    block_dict = request.json
+    # create block object from dictionary received
+    block = Block(index=block_dict['index'], timestamp=block_dict['timestamp'], transactions=block_dict['transactions'],
+                  nonce=block_dict['nonce'], previousHash=block_dict['previous_hash'], hash=block_dict['hash'])
+    # if mined block previous hash = node's last block's hash and hash of mined block is valid --> add block else reject
+    # if mined block previous hash != node's last block's hash : node received block from other miner - 2nd block
+    # if mined block is valid but its previous hash is not contained in chain: conflict, not 2nd block from 2nd miner
+    if block.previousHash == cur_node.blockchain.get_last_block_hash():
+        if cur_node.validate_block(block):
+            cur_node.blockchain.add_block(block)
+            response = jsonify({'message': 'Node {} added block to blockchain'.format(cur_node.id)})
+            return response, 200
+        else:
+            response = {'message': 'Block rejected from {} - hash is not valid'.format(cur_node.id)}
+            return jsonify(response), 400
+        #periptwsi conflict: ean to previous hash tou block den uparxei sthn alysida
+        #etsi diaxwrizetai apo thn periptwsi tis deuterhs afiksis block apo ton tautoxrono miner
+    elif cur_node.validate_block(block) and not(cur_node.blockchain.hash_exists_in_chain(block.previous_hash)):
+        #TODO: Thread needed?, asks for chain every node, mporei kai oxi
+        cur_node.resolve_conflict()
+        response = {'message': 'Resolving Conflict'}
+        return jsonify(response), 200
+    else:
+        response = jsonify({'message': 'Block rejected from {} - previous hash not the same - second block received from simultaneous miner'.format(cur_node.id)})
+        return response, 400
+
+@app.route('/chain', methods=['GET'])
+def give_chain():
+    response = jsonpickle.encode(cur_node.blockchain.chain, unpicklable=True)
+    return jsonify(response), 200
 
 
 def send_details_to_nodes(rest_nodes_details, node_id, cur_node_details,  responses):
@@ -259,7 +294,7 @@ if __name__ == '__main__':
     parser.add_argument('--bootstrap_port', default='5000', type=str)
     parser.add_argument('--is_bootstrap', type=int, choices=[0, 1], default=0)
     # parser.add_argument('--capacity', default=5000, type=positive_int)
-    parser.add_argument('--capacity', default='5000', type=int)
+    parser.add_argument('--capacity', default=4, type=int)
     parser.add_argument('--difficulty', default=3, type=int)
     parser.add_argument('--no_nodes', default=3, type=int)
     parser.add_argument('--app_port', default=5000, type = int)
@@ -280,7 +315,7 @@ if __name__ == '__main__':
     print(no_nodes)
 
     global cur_node
-    cur_node = Node(ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, difficulty, blockchain_snapshot=None,
+    cur_node = Node(ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, capacity, difficulty, blockchain_snapshot=None,
                 key_length=2048)
     app.run(host='0.0.0.0', port=app_port)#, debug=True)
 

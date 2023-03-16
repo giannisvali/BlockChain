@@ -6,13 +6,14 @@ from collections import OrderedDict
 
 
 class Block:
-    def __init__(self, index, transactions, previousHash=''):
+    def __init__(self, index, transactions, previousHash='', nonce=0,
+                 timestamp=datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), hash=None):
         self.index = index
         self.previousHash = previousHash
-        self.timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+        self.timestamp = timestamp
         self.listOfTransactions = transactions
-        self.nonce = 0
-        self.hash = self.my_hash()
+        self.nonce = nonce
+        self.hash = self.my_hash() if hash is None else hash
 
 
 
@@ -22,7 +23,7 @@ class Block:
     # calculates hash of the block using nonce, its transactions, prev hash and timestamp
     def my_hash(self):
         hash = hashlib.sha256()
-        # TODO: consider addition of __str__ in transaction class
+        # TODO: consider possible changes depending on type of transaction (Transaction vs dictionary)
         data = ''.join(str(x) for x in self.listOfTransactions)
         hash.update(
             str(self.nonce).encode('utf-8') +
@@ -32,17 +33,36 @@ class Block:
         )
         return hash.hexdigest()
 
-    def mine(self, difficulty):
+    def mine(self, difficulty, chain_length, chain):
         difficulty_zeros = '0' * difficulty
+        print('initial chain length {}'.format(chain_length))
+        print('initial chain {}'.format(chain))
         print('mining started')
+        # check if first difficulty characters of hash are zeros
         while self.hash[0:difficulty] != difficulty_zeros:
             self.nonce += 1
             self.hash = self.my_hash()
-        print('mining finished with hash {} and nonce {}'.format(self.hash, self.nonce))
+            # compare initial chain length with current chain length
+            # if chain length greater another node mined the block --> stop mining
+            if chain_length < len(chain):
+                print('Mining stopped, another node mined the block')
+                return False #stopped
+
+        print('mining successful : finished with hash {} and nonce {}'.format(self.hash, self.nonce))
+        return True #completed
+
+    def to_dict(self):
+        return {
+            'index': self.index,
+            'previous_hash': self.previousHash,
+            'timestamp': self.timestamp,
+            'transactions': self.listOfTransactions,
+            'nonce': self.nonce,
+            'hash': self.hash
+        }
 
     def __str__(self):
-        return ("\n---------------BLOCK-----------------------\n"
-                + "Index: {}\nPreviousHash: {}\nTimestamp: {}\nHash: {}\nNonce: {}\nTransactions: {}".format(
+        return ("Index: {}\nPreviousHash: {}\nTimestamp: {}\nHash: {}\nNonce: {}\nTransactions: {}".format(
                     self.index,
                     self.previousHash,
                     self.timestamp,
