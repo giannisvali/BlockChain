@@ -48,6 +48,15 @@ def set_node_url(cur_node_details):
 
     return cur_node_url
 
+
+def view_transactions(cur_node_url):
+    response = requests.get(cur_node_url + '/last-block-transactions')
+    response = response.json()
+    transactions = response['transactions']
+    for tr in transactions:
+        tr_dict = tr.todict()
+        # kai edw printarw ta key-value pairs me ta antistoixa mhnymata
+
 print("Welcome to Noobcash client!")
 cur_node_id = None
 while(1):
@@ -117,7 +126,8 @@ while(1):
         #proeraitiko apla gia kalh praktikh isws prosthesoume merikes getter/setters functions.
 
     elif command[0] == "view" and len(command) == 1:
-        response = requests.get(cur_node_url + '/view-transactions')
+
+        view_transactions(cur_node_url)
 
 
     else:

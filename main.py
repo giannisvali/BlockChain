@@ -75,16 +75,11 @@ def create_client_transaction():
     # return jsonify({"node_details": app.config['nodes_details'][node_id]}), 200
 
 
-@app.route('/view-transactions')
-def view_transactions():
+@app.route('/last-block-transactions')
+def last_block_transactions():
 
-    return cur_node.blockchain.get_lastblock
-    data = request.json
-    node_id = data['node_id']
-    if node_id not in app.config['nodes_details']:
-        return jsonify({"node_details": None}), 404
+    return jsonify({"transactions": cur_node.blockchain.get_last_block().listOfTransactions}), 200
 
-    return jsonify({"node_details": app.config['nodes_details'][node_id]}), 200
 
 @app.route('/balance')
 def get_balance():
