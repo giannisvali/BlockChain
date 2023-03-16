@@ -19,6 +19,7 @@ from block import Block
 import jsonpickle
 
 class Node:
+
     def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, capacity, difficulty,
                  blockchain_snapshot=None,
                  key_length=2048):
@@ -26,11 +27,11 @@ class Node:
         self.ip_address = ip_address
         self.port = port
         self.no_nodes = no_nodes
-        print(self.no_nodes)
-        print(self.port)
         self.network = dict()
+
         #TODO: pass capaity to blockchain
         self.blockchain = Blockchain(capacity=capacity, difficulty=difficulty)
+
         self.bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
         self.wallet = self.generate_wallet(key_length)
 
@@ -281,6 +282,7 @@ class Node:
             print("Not validate sign on the transaction!!Scammer find!")
             response = jsonify({"public_key": self.wallet.get_public_key(), "approve": False})
         return response
+
 
 #     def add_transaction_to_block():
 #

@@ -36,6 +36,57 @@ def get_node_id():
     return response, 200
 
 
+
+@app.route('/specific-node')
+def get_specific_node():
+    data = request.json
+    node_id = data['node_id']
+    if node_id not in app.config['nodes_details']:
+        return jsonify({"node_details": None}), 404
+
+    return jsonify({"node_details": app.config['nodes_details'][node_id]}), 200
+
+
+@app.route('/find-wallet-public-key')
+def find_wallet_public_key():
+    details = request.json
+    wallet_public_key = details['wallet_public_key']
+    print(wallet_public_key)
+    for cur_key, cur_values in app.config['nodes_details'].items():
+        if cur_values[0] == wallet_public_key:
+            return jsonify({"details": app.config['nodes_details'][cur_key]}), 200
+
+
+    return jsonify({"response": None}), 404
+
+
+
+@app.route('/create-client-transaction', methods=['POST'])
+def create_client_transaction():
+    details = request.json
+    wallet_public_key = details['wallet_public_key'] #get public key of receiver
+    NBC = details['NBC']
+    cur_node.create_transaction(wallet_public_key, int(NBC))
+    return jsonify({"response": None}), 201   #na allaxthei auto prepei na baloume thn create_trtansaction na gyrnaei kati kai oxi apla na printarei
+                                                #mesa ths
+
+    # if node_id not in app.config['nodes_details']:
+    #     return jsonify({"node_details": None}), 404
+    #
+    # return jsonify({"node_details": app.config['nodes_details'][node_id]}), 200
+
+
+@app.route('/last-block-transactions')
+def last_block_transactions():
+
+    return jsonify({"transactions": cur_node.blockchain.get_last_block().listOfTransactions}), 200
+
+
+@app.route('/balance')
+def get_balance():
+    return jsonify({"balance": cur_node.wallet.balance()}), 200
+
+
 @app.route('/transaction-id')
 def get_transaction_id():
     transaction_id = app.config['transaction_id']  # app.config.get('NEXT_NODE_ID', 0)
@@ -209,6 +260,30 @@ def receive_transaction():
     return cur_node.validate_transaction(transaction_details)
     # return jsonify({'status': 'success'})
 
+@app.route('/receive-block', methods=['POST'])
+def receive_block():
+    block = request.json
+
+    if cur_node.validate_block(block):
+        cur_node.update_blockchain(block)
+        return jsonify({'status': 'success'})
+
+    return jsonify({'status': 'failure'})
+
+    #h ylopoihsh exei ginei me th logikh oti to block einai dictionary kai apothikeyetai ws dictionary sto blockchain
+    #pou einai mia list kai dhmioyrgeitai sthn klash Node. An theloume na ta apothikeyoume ws ibstances ths klashs
+    #Block tote prepei na dhmioyrgoume edw ena instance tou Block xrhsimopoiowntas ta stoixeia tou dictionary block pou
+    #pairnoume se ayth th synarthsh.
+
+
+    # validte block
+    # add block to chain
+    # app.config['nodes_details'] = all_details
+    # cur_node.set_network(app.config['nodes_details'])
+    # print("APP CONFIG:", app.config['nodes_details'])
+    # wallet_public_key, ip_address, port = app.config['nodes_details']['0']  #bootstrap node details
+    # cur_node.wallet.update_utxo(wallet_public_key, [],
+    #  [(0, 0, wallet_public_key, 100 * no_nodes)]) #sender, transaction_input, transaction_output)
 
 
 if __name__ == '__main__':
