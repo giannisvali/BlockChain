@@ -114,10 +114,11 @@ while(1):
         response = requests.post(cur_node_url + '/create-client-transaction', json = details)
         #EDW THELEI NA DW TO RESPONSE POU THA FTIAXTEI APO THN CREATE_TRANSACTION
         #GENIKA NA DOUME AN THA DEXOMASTE KAI FLOATS WS AMOUNT STA TRANSACTIONS, OXI MONO EDW PANTOY STO PROGRAMMA GIATI TWRA SKAEI ME FLOATS
-
+        #proeraitiko apla gia kalh praktikh isws prosthesoume merikes getter/setters functions.
 
     elif command[0] == "view" and len(command) == 1:
-        pass
+        response = requests.get(cur_node_url + '/view-transactions')
+
 
     else:
         print("Wrong command! Try again.")
