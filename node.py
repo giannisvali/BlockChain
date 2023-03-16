@@ -16,6 +16,7 @@ from transaction import *
 from flask import jsonify
 from blockchain import Blockchain
 from block import Block
+import jsonpickle
 
 class Node:
     def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, capacity, difficulty,
@@ -340,10 +341,52 @@ class Node:
         temp_incoming_block = Block(incoming_block.index, incoming_block.listOfTransactions, incoming_block.previousHash,
                                incoming_block.nonce, incoming_block.timestamp)
         # compare expected hash to incoming block's hash, if True block is valid
-        return expected_hash == temp_incoming_block.hash
+        return expected_hash == temp_incoming_block.hash and temp_incoming_block.hash[0:self.blockchain.difficulty] == ('0' * self.blockchain.difficulty)
+
+    def get_chain(self, node_url, responses):
+        response = requests.get(node_url + '/chain')
+        responses.append(response)
+
 
     def resolve_conflict(self):
-        print('Resolve conflict')
+            threads = []
+            responses = []
+            for key,values in self.network_items():
+                if str(key) != str(self.id):
+                    wallet_public_key, ip_address, port = values
+                    print(ip_address, port)
+                    node_url = 'http://' + ip_address + ":" + port
+                    thread = threading.Thread(target=self.get_chain, args=(node_url, responses))
+                    threads.append(thread)
+                    thread.start()
+            # wait all threads to finish
+            for t in threads:
+                t.join()
+            max_length = len(self.blockchain.chain)
+            max_chain = self.blockchain.chain
+            for response in responses:
+                if response.status_code == 200:
+                    chain = jsonpickle.decode(response.json())
+                    length = len(chain)
+                    if max_length < length:
+                        max_length = length
+                        max_chain = chain
+            self.blockchain.chain = max_chain
+        #TODO: update balance?
+
+    def validate_chain(self, bootstrap_chain):
+        for b in bootstrap_chain:
+            # calculate hash of every block
+            temp_block = Block(index=b.index, transactions=b.listOfTransactions, previousHash=b.previousHash,
+                               timestamp=b.timestamp, nonce=b.nonce)
+            # check if difficulty zeros and correct hashing
+            if not (b.hash==temp_block.hash and temp_block.hash[0:self.blockchain.difficulty] == ('0' * self.blockchain.difficulty)):
+                return False
+        return True
+
+
+
+
 
 
     #validate_chain: mono otan o node prwtoeiserxetai sto diktyo

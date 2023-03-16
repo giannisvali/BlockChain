@@ -7,6 +7,7 @@ from node import *
 from flask_cors import CORS
 from flask import jsonify, Response
 import threading
+import jsonpickle
 import base64
 #aaaaaaaaaa
 app = Flask(__name__)
@@ -95,6 +96,11 @@ def receive_block():
     else:
         response = jsonify({'message': 'Block rejected from {} - previous hash not the same - second block received from simultaneous miner'.format(cur_node.id)})
         return response, 400
+
+@app.route('/chain', methods=['GET'])
+def give_chain():
+    response = jsonpickle.encode(cur_node.blockchain.chain, unpicklable=True)
+    return jsonify(response), 200
 
 
 def send_details_to_nodes(rest_nodes_details, node_id, cur_node_details,  responses):
