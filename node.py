@@ -18,6 +18,7 @@ from blockchain import Blockchain
 from block import Block
 import jsonpickle
 
+
 class Node:
 
     def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, capacity, difficulty,
@@ -29,7 +30,7 @@ class Node:
         self.no_nodes = no_nodes
         self.network = dict()
 
-        #TODO: pass capaity to blockchain
+        # TODO: pass capacity to blockchain
         self.blockchain = Blockchain(capacity=capacity, difficulty=difficulty)
 
         self.bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
@@ -46,6 +47,17 @@ class Node:
             self.wallet.update_utxo(self.wallet.get_public_key(), [],
                                     [(0, 0, self.wallet.get_public_key(), 100 * no_nodes)])
 
+            trans = Transaction(transaction_id=0, sender_address=self.wallet.get_public_key(),
+                                recipient_address=self.wallet.get_public_key(),
+                                transaction_input=[],
+                                transaction_output=[(0, 0, self.wallet.get_public_key(), no_nodes * 100)],
+                                sender_private_key=self.wallet.get_private_key(),
+                                value=no_nodes * 100)
+
+
+
+            self.blockchain.add_block(Block(previousHash=1, nonce=0, index=0, transactions=trans.to_dict()))
+
             print(self.id)
             self.network[self.id] = (self.wallet.get_public_key(), self.ip_address, self.port)
             # self.id = self.insert_into_network()
@@ -54,6 +66,15 @@ class Node:
             self.NBC = 0
             # bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
             self.id = self.insert_into_network()
+            response = requests.get(self.bootstrap_node_url + '/chain')
+            self.check_status_code(response.status_code, 200)
+            chain = jsonpickle.decode(response.json())
+            if self.validate_chain(chain):
+                print("Chain received from bootstrap has been validated.")
+                self.blockchain.chain = chain
+
+
+
 
     def set_network(self, dict_net):
         self.network = dict_net
@@ -78,32 +99,32 @@ class Node:
 
     # create a wallet for this node, with a public key and a private key
     @staticmethod
-    def check_status_code(response_status_code, expected_status_code = 200):
-        if response_status_code!=expected_status_code:
+    def check_status_code(response_status_code, expected_status_code=200):
+        if response_status_code != expected_status_code:
             exit("Something went wrong when trying to connect to the network! Exiting...")
 
     def get_id(self):
 
-
         print(self.bootstrap_node_url + '/node-id')
         response = requests.get(self.bootstrap_node_url + '/node-id')
-        print("eimai o slave", response.json(), flush = True)
+        print("eimai o slave", response.json(), flush=True)
         print(response.status_code)
         self.check_status_code(response.status_code, 200)
         data = response.json()
 
-        #data = json.loads(response.content) #isodynamo me to response.json()
-        #print(data)
+        # data = json.loads(response.content) #isodynamo me to response.json()
+        # print(data)
         return data['node_id']
-        #return response_dict['node_id']
+        # return response_dict['node_id']
 
     def send_details(self, details):
         print("stelnw ta details")
-        response = requests.post(self.bootstrap_node_url + '/receive-details', json = details)#json=json.dumps(details).encode('utf-8'))
-        print(response, flush = True)
+        response = requests.post(self.bootstrap_node_url + '/receive-details',
+                                 json=details)  # json=json.dumps(details).encode('utf-8'))
+        print(response, flush=True)
         print(response.status_code)
         self.check_status_code(response.status_code, 200)
-        return response #jsonify(response.json())
+        return response  # jsonify(response.json())
 
     def insert_into_network(self):
         id = self.get_id()
@@ -113,7 +134,7 @@ class Node:
         print(self.no_nodes)
 
         details = {'id': id,
-                   #'wallet_public_key': self.wallet.get_public_key().decode('utf-8'),
+                   # 'wallet_public_key': self.wallet.get_public_key().decode('utf-8'),
                    'wallet_public_key': self.wallet.get_public_key(),
                    'ip_address': self.ip_address,
                    'port': self.port,
@@ -141,19 +162,15 @@ class Node:
                 return transaction_input, change
             amount_left -= NBC
 
-
         if amount_left > 0:
             return [], 0
-
 
     def create_transaction(self, receiver_address, amount):  # yphrxe kai ena signature isws xreiastei\!!!!
         # na doume pws tha dimiourgoume to transaction id kai pws 9a kanoume validation na min einai amnoun < balance
         # bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
         response = requests.get(self.bootstrap_node_url + '/transaction-id')
         response_dict = response.json()
-        print("UTXOS KATA TO CREATION TREANSACTIONl", self.wallet.get_UTXOs())
         # response_dict = json.loads(response_json)
-        print(response_dict['transaction_id'])
         # ama parw transaction_id kai telika den ginei validate to transaction prepei na meiwsw to transaction_id kata 1
         transaction_id = response_dict['transaction_id']
 
@@ -173,14 +190,12 @@ class Node:
 
         response = requests.get(self.bootstrap_node_url + '/transaction-output-id')
         response_dict = response.json()
-        print(response_dict['transaction_output_id'])
         # ama parw transaction_id kai telika den ginei validate to transaction prepei na meiwsw to transaction_id kata 1
 
         transaction_output_id1 = response_dict['transaction_output_id']
         if change != 0:
             response = requests.get(self.bootstrap_node_url + '/transaction-output-id')
             response_dict = response.json()
-            print(response_dict['transaction_output_id'])
             # ama parw transaction_id kai telika den ginei validate to transaction prepei na meiwsw to transaction_id kata 1
 
             transaction_output_id2 = response_dict['transaction_output_id']
@@ -189,25 +204,26 @@ class Node:
         else:
             transaction_output = [(transaction_output_id1, transaction_id, receiver_address, amount)]
 
-
-
         current_trans = Transaction(self.wallet.get_public_key(), transaction_id, transaction_input,
                                     transaction_output, self.wallet.get_private_key(), receiver_address, amount)
 
-        print("CURRENT TRANS:", current_trans.to_dict())
 
         # enhmerwtiko mhnyma !!!!!!!!!
         if self.broadcast_transaction(current_trans.to_dict()):
             print("Validate transaction make new UTXOS for that transaction")
-            self.wallet.update_utxo(current_trans.sender_address, current_trans.transaction_inputs, current_trans.transaction_output)
+            self.wallet.update_utxo(current_trans.sender_address, current_trans.transaction_inputs,
+                                    current_trans.transaction_output)
+
+            self.blockchain.add_transaction(current_trans)
+            thread = threading.Thread(target=self.mine_block)
+            thread.start()
+
         else:
             response = requests.get(self.bootstrap_node_url + '/reduce-transaction-output-id')
             response_dict = response.json()
-            print(response_dict['transaction_output_id'])
             if change != 0:
                 response = requests.get(self.bootstrap_node_url + '/reduce-transaction-output-id')
                 response_dict = response.json()
-                print(response_dict['transaction_output_id'])
 
             print("Not validate transaction!!")
 
@@ -218,17 +234,16 @@ class Node:
 
         # trans_dict['sender_address'] = trans_dict['sender_address'].decode('utf-8')
         # trans_dict['recipient_address'] = trans_dict['recipient_address'].decode('utf-8')
-        #trans_dict['signature'] = trans_dict['signature'].decode('utf-8')
+        # trans_dict['signature'] = trans_dict['signature'].decode('utf-8')
 
-        response = requests.post(node_url + '/receive-transaction', json = trans_dict)
-        print("send transaction response:", response, flush  = True)
+        response = requests.post(node_url + '/receive-transaction', json=trans_dict)
+        print("send transaction response:", response, flush=True)
         responses.append((response.json(), node_url))
 
     def broadcast_transaction(self, trans_dict):
         threads = []
         responses = []
         # network = main.app.config['nodes_details']
-        print("networkksksk~!", self.network.items())
         for key, values in self.network.items():
             if str(key) != str(self.id):
                 print("den apefyga to brodcast toy bootstrap")
@@ -267,13 +282,16 @@ class Node:
         print("validate sign")
 
         if validate_sign:
-            #baraei epeidh mia lista de mporei na mpei mesa se ena set
+            # baraei epeidh mia lista de mporei na mpei mesa se ena set
             trans["transaction_inputs"] = [tuple(inner_list) for inner_list in trans["transaction_inputs"]]
             if set(trans["transaction_inputs"]).intersection(self.wallet.get_UTXOs()[trans["sender_address"]]) == set(
                     trans["transaction_inputs"]):
                 self.wallet.update_utxo(trans["sender_address"], trans["transaction_inputs"],
                                         trans["transaction_outputs"])
                 print("Validate transaction v1!!!")
+                self.blockchain.add_transaction(trans)
+                thread = threading.Thread(target=self.mine_block)
+                thread.start()
                 response = jsonify({"public_key": self.wallet.get_public_key(), "approve": True})
             else:
                 print("Not validate amount for the transaction!!Scammer find!")
@@ -283,11 +301,10 @@ class Node:
             response = jsonify({"public_key": self.wallet.get_public_key(), "approve": False})
         return response
 
-
-#     def add_transaction_to_block():
-#
-#     # if enough transactions  mine
-#
+    #     def add_transaction_to_block():
+    #
+    #     # if enough transactions  mine
+    #
 
     def send_block(self, node_url, mined_block, responses):
         # block to json
@@ -315,6 +332,7 @@ class Node:
         # TODO: h get_mined_block mhpws prepei na kaleitai apo thread? upoloipes entoles mhpws prepei na ektelstoun
         # check if unmined transactions have exceeded capacity
         if len(self.blockchain.get_unmined_transactions()) >= self.blockchain.capacity:
+            print("Mining started.")
             current_chain_length = len(self.blockchain.chain)
             # calculate current chain length and pass it as arg to get_mined_block --> mine
             mined_block = self.blockchain.get_mined_block(chain_length=current_chain_length)
@@ -322,77 +340,76 @@ class Node:
             # and check if mined_block is not None - if None node did not complete mining and stopped
             # else node mined a block and broadcast it to the network
             if mined_block is not None and mined_block.previousHash == self.blockchain.get_last_block_hash():
+                print("Nonce found.")
                 # TODO: define order of block addition and broadcasting
                 self.blockchain.add_block(mined_block)
                 self.broadcast_block(mined_block)
-
 
     def validate_block(self, incoming_block):
         # checks if hash is valid
         # case where transactions_to_mine have not been created yet
         # expected transactions = those that node would mine, and expects to be mined by others
         expected_transactions = self.blockchain.transactions_to_mine if len(
-            self.blockchain.transactions_to_mine) > 0 else self.blockchain.transactions_unmined[0:self.blockchain.capacity]
+            self.blockchain.transactions_to_mine) > 0 else self.blockchain.transactions_unmined[
+                                                           0:self.blockchain.capacity]
         # temp block contains:next index expected,expected transactions,expected previous hash,
         # incoming block's nonce, incoming block's timestamp
         temp_block = Block(len(self.blockchain.chain), expected_transactions, self.blockchain.get_last_block_hash(),
                            incoming_block.nonce, incoming_block.timestamp)
-        #calculate expected hash
+        # calculate expected hash
         expected_hash = temp_block.hash
         # recalculate incoming block's hash, in case its wrong
-        temp_incoming_block = Block(incoming_block.index, incoming_block.listOfTransactions, incoming_block.previousHash,
-                               incoming_block.nonce, incoming_block.timestamp)
+        temp_incoming_block = Block(incoming_block.index, incoming_block.listOfTransactions,
+                                    incoming_block.previousHash,
+                                    incoming_block.nonce, incoming_block.timestamp)
         # compare expected hash to incoming block's hash, if True block is valid
-        return expected_hash == temp_incoming_block.hash and temp_incoming_block.hash[0:self.blockchain.difficulty] == ('0' * self.blockchain.difficulty)
+        return expected_hash == temp_incoming_block.hash and temp_incoming_block.hash[0:self.blockchain.difficulty] == (
+                    '0' * self.blockchain.difficulty)
 
     def get_chain(self, node_url, responses):
         response = requests.get(node_url + '/chain')
         responses.append(response)
 
-
     def resolve_conflict(self):
-            threads = []
-            responses = []
-            for key,values in self.network_items():
-                if str(key) != str(self.id):
-                    wallet_public_key, ip_address, port = values
-                    print(ip_address, port)
-                    node_url = 'http://' + ip_address + ":" + port
-                    thread = threading.Thread(target=self.get_chain, args=(node_url, responses))
-                    threads.append(thread)
-                    thread.start()
-            # wait all threads to finish
-            for t in threads:
-                t.join()
-            max_length = len(self.blockchain.chain)
-            max_chain = self.blockchain.chain
-            for response in responses:
-                if response.status_code == 200:
-                    chain = jsonpickle.decode(response.json())
-                    length = len(chain)
-                    if max_length < length:
-                        max_length = length
-                        max_chain = chain
-            self.blockchain.chain = max_chain
-        #TODO: update balance?
+        threads = []
+        responses = []
+        for key, values in self.network_items():
+            if str(key) != str(self.id):
+                wallet_public_key, ip_address, port = values
+                print(ip_address, port)
+                node_url = 'http://' + ip_address + ":" + port
+                thread = threading.Thread(target=self.get_chain, args=(node_url, responses))
+                threads.append(thread)
+                thread.start()
+        # wait all threads to finish
+        for t in threads:
+            t.join()
+        max_length = len(self.blockchain.chain)
+        max_chain = self.blockchain.chain
+        for response in responses:
+            if response.status_code == 200:
+                chain = jsonpickle.decode(response.json())
+                length = len(chain)
+                if max_length < length:
+                    max_length = length
+                    max_chain = chain
+        self.blockchain.chain = max_chain
+
+    # TODO: update balance?
 
     def validate_chain(self, bootstrap_chain):
-        for b in bootstrap_chain:
+        for b in bootstrap_chain[1:]:
             # calculate hash of every block
             temp_block = Block(index=b.index, transactions=b.listOfTransactions, previousHash=b.previousHash,
                                timestamp=b.timestamp, nonce=b.nonce)
             # check if difficulty zeros and correct hashing
-            if not (b.hash==temp_block.hash and temp_block.hash[0:self.blockchain.difficulty] == ('0' * self.blockchain.difficulty)):
+            if not (b.hash == temp_block.hash and temp_block.hash[0:self.blockchain.difficulty] == (
+                    '0' * self.blockchain.difficulty)):
                 return False
         return True
 
-
-
-
-
-
-    #validate_chain: mono otan o node prwtoeiserxetai sto diktyo
-  #  def validate_chain(self):
+    # validate_chain: mono otan o node prwtoeiserxetai sto diktyo
+#  def validate_chain(self):
 #
 #     def valid_proof(.., difficulty=MINING_DIFFICULTY):
 #
@@ -426,5 +443,4 @@ class Node:
 #     cur_node.blockchain.add_block(block3)
 #     print(cur_node.blockchain.chain)
 #     print('prostethke to 3')
-    #cur_node.mine_block()
-
+# cur_node.mine_block()

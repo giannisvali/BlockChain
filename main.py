@@ -207,8 +207,6 @@ def complete_network():
     initial_transaction()
     print("complete4")
 
-    print("Node UTXO!!!", cur_node.wallet.get_UTXOs())
-
 
 
 def update_nodes_details(details):
@@ -260,30 +258,6 @@ def receive_transaction():
     return cur_node.validate_transaction(transaction_details)
     # return jsonify({'status': 'success'})
 
-@app.route('/receive-block', methods=['POST'])
-def receive_block():
-    block = request.json
-
-    if cur_node.validate_block(block):
-        cur_node.update_blockchain(block)
-        return jsonify({'status': 'success'})
-
-    return jsonify({'status': 'failure'})
-
-    #h ylopoihsh exei ginei me th logikh oti to block einai dictionary kai apothikeyetai ws dictionary sto blockchain
-    #pou einai mia list kai dhmioyrgeitai sthn klash Node. An theloume na ta apothikeyoume ws ibstances ths klashs
-    #Block tote prepei na dhmioyrgoume edw ena instance tou Block xrhsimopoiowntas ta stoixeia tou dictionary block pou
-    #pairnoume se ayth th synarthsh.
-
-
-    # validte block
-    # add block to chain
-    # app.config['nodes_details'] = all_details
-    # cur_node.set_network(app.config['nodes_details'])
-    # print("APP CONFIG:", app.config['nodes_details'])
-    # wallet_public_key, ip_address, port = app.config['nodes_details']['0']  #bootstrap node details
-    # cur_node.wallet.update_utxo(wallet_public_key, [],
-    #  [(0, 0, wallet_public_key, 100 * no_nodes)]) #sender, transaction_input, transaction_output)
 
 
 if __name__ == '__main__':

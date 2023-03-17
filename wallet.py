@@ -27,7 +27,6 @@ class Wallet:
 		# self.transactions
 
 	def update_utxo(self, sender, transaction_input, transaction_output):
-		print("UPDATE UTXOOO")
 		mphka = False
 		for item in transaction_input:
 			if item in self.UTXOs[sender]:
@@ -38,13 +37,11 @@ class Wallet:
 
 
 		for transaction_output_id, transaction_id, address, amount in transaction_output:
-			print("boolean check:", address == sender)
 			if address not in self.UTXOs :
 				self.UTXOs[address] = [(transaction_output_id, amount)] #apla ebala to id tou output anti gia to id tou transaction
 			else:
 				self.UTXOs[address].append((transaction_output_id, amount))
 
-		print("TELIKO UTXOS:", self.UTXOs)
 	def get_public_key(self):
 		return self.public_key
 
