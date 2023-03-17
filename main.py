@@ -108,17 +108,6 @@ def reduce_transaction_output_id():
     return jsonify({'status': 'success'})
 
 
-@app.route('/receive-network', methods=['POST'])
-def receive_network():
-    all_details = request.json
-    app.config['nodes_details'] = all_details
-    cur_node.set_network(app.config['nodes_details'])
-    print("APP CONFIG:", app.config['nodes_details'])
-    wallet_public_key, ip_address, port = app.config['nodes_details']['0']  #bootstrap node details
-    cur_node.wallet.update_utxo(wallet_public_key, [],
-     [(0, 0, wallet_public_key, 100 * no_nodes)]) #sender, transaction_input, transaction_output)
-    return jsonify({'status': 'success'})
-
 
 @app.route('/receive-block', methods=['POST'])
 def receive_block():
@@ -154,11 +143,31 @@ def give_chain():
     return jsonify(response), 200
 
 
+@app.route('/receive-network', methods=['POST'])
+def receive_network():
+    print("kanw receive to network")
+    all_details = request.json
+    app.config['nodes_details'] = all_details
+    cur_node.set_network(app.config['nodes_details'])
+    print("APP CONFIG:", app.config['nodes_details'])
+    wallet_public_key, ip_address, port = app.config['nodes_details']['0']  #bootstrap node details
+    cur_node.wallet.update_utxo(wallet_public_key, [],
+     [(0, 0, wallet_public_key, 100 * no_nodes)]) #sender, transaction_input, transaction_output)
+
+    print("RECEIVE NETWORK GET UTXOS", flush = True)
+    print(cur_node.wallet.get_UTXOs(),flush = True)
+
+    return jsonify({'status': 'success'})
+
+
 def send_details_to_nodes(rest_nodes_details, node_id, cur_node_details,  responses):
     wallet_public_key, ip_address, port = cur_node_details
-    node_url = 'http://' + ip_address + ":" + port
-
-    response = requests.post(node_url + '/receive-network', json=rest_nodes_details)
+    print(ip_address, port)
+    temp_node_url = "http://" + ip_address + ":" + port
+    print("send_details_to_node", temp_node_url)
+    import time
+    time.sleep(0.01)
+    response = requests.post(temp_node_url + '/receive-network', json=rest_nodes_details)
     #responses.append((response.json(), node_url))
     responses.append((response, cur_node_details))
 
@@ -167,8 +176,8 @@ def broadcast_nodes_details():
     responses = []
 
     for cur_key, cur_values in app.config['nodes_details'].items():
-        print("CUR KEYYY", cur_key)
         if str(cur_key) != '0':
+            print("CUR KEYYY", cur_key, cur_values)
             temp_dict = {key: value for key, value in app.config['nodes_details'].items()}
             thread = threading.Thread(target=send_details_to_nodes, args=(temp_dict, cur_key, cur_values, responses))
             threads.append(thread)
@@ -257,7 +266,6 @@ def receive_transaction():
 
     return cur_node.validate_transaction(transaction_details)
     # return jsonify({'status': 'success'})
-
 
 
 if __name__ == '__main__':

@@ -76,6 +76,7 @@ class Node:
 
 
 
+
     def set_network(self, dict_net):
         self.network = dict_net
         print("Network:", self.network)
@@ -217,6 +218,7 @@ class Node:
             self.blockchain.add_transaction(current_trans)
             thread = threading.Thread(target=self.mine_block)
             thread.start()
+            thread.join()  #prosthesa auto gia sigouria
 
         else:
             response = requests.get(self.bootstrap_node_url + '/reduce-transaction-output-id')
@@ -283,7 +285,12 @@ class Node:
 
         if validate_sign:
             # baraei epeidh mia lista de mporei na mpei mesa se ena set
+            print(trans)
             trans["transaction_inputs"] = [tuple(inner_list) for inner_list in trans["transaction_inputs"]]
+            print("get_utxossss", flush = True)
+            print(self.wallet.get_UTXOs(), flush = True)
+            print(self.wallet.get_UTXOs()[trans["sender_address"]])
+
             if set(trans["transaction_inputs"]).intersection(self.wallet.get_UTXOs()[trans["sender_address"]]) == set(
                     trans["transaction_inputs"]):
                 self.wallet.update_utxo(trans["sender_address"], trans["transaction_inputs"],
@@ -331,7 +338,8 @@ class Node:
         # TODO: prepei na elegxoume an ginetai mining hdh?
         # TODO: h get_mined_block mhpws prepei na kaleitai apo thread? upoloipes entoles mhpws prepei na ektelstoun
         # check if unmined transactions have exceeded capacity
-        if len(self.blockchain.get_unmined_transactions()) >= self.blockchain.capacity:
+        if len(self.blockchain.get_unmined_transactions()) >= self.blockchain.capacity: #EDW AYTO ISWS NA BGEI EKTOS THS SYNARTHSHS,
+                                                                                        #GIA NA MHN ANOIGOUME THREADS XWRIS LOGO
             print("Mining started.")
             current_chain_length = len(self.blockchain.chain)
             # calculate current chain length and pass it as arg to get_mined_block --> mine
