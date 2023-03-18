@@ -56,7 +56,7 @@ class Node:
 
 
 
-            self.blockchain.add_block(Block(previousHash=1, nonce=0, index=0, transactions=trans.to_dict()))
+            self.blockchain.add_block(Block(previousHash=1, nonce=0, index=0, transactions=[trans.to_dict()]))
 
             print(self.id)
             self.network[self.id] = (self.wallet.get_public_key(), self.ip_address, self.port)
@@ -215,7 +215,7 @@ class Node:
             self.wallet.update_utxo(current_trans.sender_address, current_trans.transaction_inputs,
                                     current_trans.transaction_output)
 
-            self.blockchain.add_transaction(current_trans.to_dict())
+            self.blockchain.add_transaction(current_trans.to_dict()) #evala kai edw to_dict, den to eixame balei
             thread = threading.Thread(target=self.mine_block)
             thread.start()
             thread.join()  #prosthesa auto gia sigouria

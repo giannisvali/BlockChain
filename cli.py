@@ -53,8 +53,9 @@ def view_transactions(cur_node_url):
     response = requests.get(cur_node_url + '/last-block-transactions')
     response = response.json()
     transactions = response['transactions']
+    print(transactions)
     for tr in transactions:
-        tr_dict = tr.todict()
+        print(tr.items())
         # kai edw printarw ta key-value pairs me ta antistoixa mhnymata
 
 print("Welcome to Noobcash client!")
