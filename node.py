@@ -314,13 +314,23 @@ class Node:
     #
 
     def execute_file_transactions(self, filepath):
+        print("Start of file transactions execution!")
         with open(filepath, 'r') as f:
             # Loop over each line in the file
             for line in f:
-                # Tokenize the line by splitting on whitespace
-                tokens = line.split()
-                # Do something with the tokens, for example print them
-                print(tokens)
+                node_id, amount = line.split()
+                node_id = node_id[2:]
+                amount = int(amount)  #KAI EDW NA DOUME MHPWS TO KANOUME FLOAT
+                                      #PANTWS STA ARXEIA EXEI MONO INTS
+
+                if int(node_id) < 3: #na bgei auto!!!
+                    receiver_public_key = self.network[node_id][0]
+                    self.create_transaction(receiver_public_key, amount)
+
+
+                #sel.network exei dict{id:[wallet_public_key, ip,port]}
+        print("End of file transactions execution!")
+
     def send_block(self, node_url, mined_block, responses):
         # block to json
         # use proper endpoint
@@ -347,6 +357,8 @@ class Node:
         # TODO: prepei na elegxoume an ginetai mining hdh?
         # TODO: h get_mined_block mhpws prepei na kaleitai apo thread? upoloipes entoles mhpws prepei na ektelstoun
         # check if unmined transactions have exceeded capacity
+        print("inserted in mine_block")
+        print(len(self.blockchain.get_unmined_transactions()), self.blockchain.capacity)
         if len(self.blockchain.get_unmined_transactions()) >= self.blockchain.capacity: #EDW AYTO ISWS NA BGEI EKTOS THS SYNARTHSHS,
                                                                                         #GIA NA MHN ANOIGOUME THREADS XWRIS LOGO
             print("Mining started.")
@@ -363,6 +375,8 @@ class Node:
                 self.broadcast_block(mined_block)
 
     def validate_block(self, incoming_block):
+
+        return True
         # checks if hash is valid
         # case where transactions_to_mine have not been created yet
         # expected transactions = those that node would mine, and expects to be mined by others
@@ -401,7 +415,7 @@ class Node:
     def resolve_conflict(self):
         threads = []
         responses = []
-        for key, values in self.network_items():
+        for key, values in self.network.items():
             if str(key) != str(self.id):
                 wallet_public_key, ip_address, port = values
                 print(ip_address, port)
@@ -427,7 +441,7 @@ class Node:
 
     def validate_chain(self, bootstrap_chain):
         for b in bootstrap_chain[1:]:
-            # calculate hash of every block
+            # calculate hash of every blo ck
             temp_block = Block(index=b.index, transactions=b.listOfTransactions, previousHash=b.previousHash,
                                timestamp=b.timestamp, nonce=b.nonce)
             # check if difficulty zeros and correct hashing

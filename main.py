@@ -126,7 +126,7 @@ def receive_block():
         if cur_node.validate_block(block):
             cur_node.blockchain.add_block(block)
             response = jsonify({'message': 'Node {} added block to blockchain'.format(cur_node.id)})
-            print('BLOCK REJECTED BECAUSE HASH IS NOT VALID')
+            #print('BLOCK REJECTED BECAUSE HASH IS NOT VALID')
             return response, 200
         else:
             if cur_chain_length < len(cur_node.blockchain.chain):
@@ -355,7 +355,7 @@ if __name__ == '__main__':
                 key_length=2048)
     app.run(host='0.0.0.0', port=app_port)#, debug=True)
 
-#
+
 
 
 #node = Node()
