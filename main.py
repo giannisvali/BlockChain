@@ -237,6 +237,7 @@ def begin_transactions():
     threads = []
     responses = []
     path_base = "./" + str(cur_node.no_nodes) + "nodes/"
+    path_base = "./" + "5" + "nodes/" #na to diwxw auto metaaaa!~`!!
     for cur_key, cur_values in app.config['nodes_details'].items():
         filepath = path_base + "transactions" + cur_key + ".txt"
         thread = threading.Thread(target=send_transactions_request, args=(cur_key, cur_values, filepath, responses))
