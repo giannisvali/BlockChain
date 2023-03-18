@@ -9,6 +9,8 @@ from flask import jsonify, Response
 import threading
 import jsonpickle
 import base64
+import time
+
 #aaaaaaaaaa
 app = Flask(__name__)
 CORS(app)
@@ -165,7 +167,6 @@ def send_details_to_nodes(rest_nodes_details, node_id, cur_node_details,  respon
     print(ip_address, port)
     temp_node_url = "http://" + ip_address + ":" + port
     print("send_details_to_node", temp_node_url)
-    import time
     time.sleep(0.01)
     response = requests.post(temp_node_url + '/receive-network', json=rest_nodes_details)
     #responses.append((response.json(), node_url))
@@ -205,6 +206,46 @@ def initial_transaction():
 
     print("teleiwsa ta initial transactions")
 
+
+@app.route('/receive-transactions-request', methods=['POST'])
+def receive_transactions_request():
+    print("kanw receive to network")
+    data = request.json
+    cur_node.execute_file_transactions(data['filename'])
+
+    return jsonify({'status': 'success'})
+
+
+def send_transactions_request(node_id, cur_node_details, filename, responses):
+    wallet_public_key, ip_address, port = cur_node_details
+    print(ip_address, port)
+    temp_node_url = "http://" + ip_address + ":" + port
+    print("send transaction request to node", temp_node_url)
+    data = {"filename": filename}
+    response = requests.post(temp_node_url + '/receive-transactions-request', json=data)
+    responses.append((response, cur_node_details))
+def begin_transactions():
+    threads = []
+    responses = []
+
+    for cur_key, cur_values in app.config['nodes_details'].items():
+        filename = "transaction" + cur_key + ".txt"
+        thread = threading.Thread(target=send_transactions_request, args=(cur_key, cur_values, filename, responses))
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    for resp, node_i in responses:
+        if resp.status_code != 200:  # edw isws baloume se poio node yphrxe problhma xrhsimopoiwntas ta stoixeia tou node_i = (wallet_public_key, ip_address, port)
+            return 'Error beginning transactions to some nodes.'
+    return 'Transactions are being executed to all nodes successfully.'
+
+
+
+
+
 def complete_network():
     print("complete1")
     cur_node.set_network(app.config['nodes_details'])
@@ -215,6 +256,9 @@ def complete_network():
 
     initial_transaction()
     print("complete4")
+
+    begin_transactions()
+    print("complete5")
 
 
 
