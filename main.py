@@ -217,28 +217,29 @@ def initial_transaction():
 
 @app.route('/receive-transactions-request', methods=['POST'])
 def receive_transactions_request():
-    print("kanw receive to network")
+    print("kanw receive to transaction request")
     data = request.json
-    cur_node.execute_file_transactions(data['filename'])
+    cur_node.execute_file_transactions(data['filepath'])
 
     return jsonify({'status': 'success'})
 
 
-def send_transactions_request(node_id, cur_node_details, filename, responses):
+def send_transactions_request(node_id, cur_node_details, filepath, responses):
     wallet_public_key, ip_address, port = cur_node_details
     print(ip_address, port)
     temp_node_url = "http://" + ip_address + ":" + port
     print("send transaction request to node", temp_node_url)
-    data = {"filename": filename}
+    data = {"filepath": filepath}
     response = requests.post(temp_node_url + '/receive-transactions-request', json=data)
     responses.append((response, cur_node_details))
+
 def begin_transactions():
     threads = []
     responses = []
-
+    path_base = "./" + str(cur_node.no_nodes) + "nodes/"
     for cur_key, cur_values in app.config['nodes_details'].items():
-        filename = "transaction" + cur_key + ".txt"
-        thread = threading.Thread(target=send_transactions_request, args=(cur_key, cur_values, filename, responses))
+        filepath = path_base + "transactions" + cur_key + ".txt"
+        thread = threading.Thread(target=send_transactions_request, args=(cur_key, cur_values, filepath, responses))
         threads.append(thread)
         thread.start()
 

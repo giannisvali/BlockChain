@@ -313,6 +313,14 @@ class Node:
     #     # if enough transactions  mine
     #
 
+    def execute_file_transactions(self, filepath):
+        with open(filepath, 'r') as f:
+            # Loop over each line in the file
+            for line in f:
+                # Tokenize the line by splitting on whitespace
+                tokens = line.split()
+                # Do something with the tokens, for example print them
+                print(tokens)
     def send_block(self, node_url, mined_block, responses):
         # block to json
         # use proper endpoint
