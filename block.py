@@ -52,14 +52,14 @@ class Block:
         return True #completed
 
     def to_dict(self):
-        return {
+        return OrderedDict({
             'index': self.index,
             'previous_hash': self.previousHash,
             'timestamp': self.timestamp,
             'transactions': self.listOfTransactions,
             'nonce': self.nonce,
             'hash': self.hash
-        }
+        })
 
     def __str__(self):
         return ("Index: {}\nPreviousHash: {}\nTimestamp: {}\nHash: {}\nNonce: {}\nTransactions: {}".format(
@@ -71,10 +71,10 @@ class Block:
                     "\n".join(str(x) for x in self.listOfTransactions)))
 
 
-    def to_dict(self):
-        return OrderedDict({'index': self.index,
-                            'previousHash': self.previousHash,
-                            'timestamp': self.timestamp,
-                            'listOfTransactions': self.listOfTransactions,
-                            'nonce': self.nonce,
-                            'hash': self.hash})
+    # def to_dict(self):
+    #     return OrderedDict({'index': self.index,
+    #                         'previousHash': self.previousHash,
+    #                         'timestamp': self.timestamp,
+    #                         'listOfTransactions': self.listOfTransactions,
+    #                         'nonce': self.nonce,
+    #                         'hash': self.hash})

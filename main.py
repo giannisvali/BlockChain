@@ -111,6 +111,7 @@ def reduce_transaction_output_id():
 
 @app.route('/receive-block', methods=['POST'])
 def receive_block():
+    print('------------------------- BLOCK RECEIVED -------------------------------------------------------------\n')
     block_dict = request.json
     # create block object from dictionary received
     block = Block(index=block_dict['index'], timestamp=block_dict['timestamp'], transactions=block_dict['transactions'],
@@ -119,21 +120,28 @@ def receive_block():
     # if mined block previous hash != node's last block's hash : node received block from other miner - 2nd block
     # if mined block is valid but its previous hash is not contained in chain: conflict, not 2nd block from 2nd miner
     if block.previousHash == cur_node.blockchain.get_last_block_hash():
+        cur_chain_length = len(cur_node.blockchain.chain)
         if cur_node.validate_block(block):
             cur_node.blockchain.add_block(block)
             response = jsonify({'message': 'Node {} added block to blockchain'.format(cur_node.id)})
+            print('BLOCK REJECTED BECAUSE HASH IS NOT VALID')
             return response, 200
         else:
-            response = {'message': 'Block rejected from {} - hash is not valid'.format(cur_node.id)}
-            return jsonify(response), 400
+            if cur_chain_length < len(cur_node.blockchain.chain):
+                response = {'message': 'mining (->node added its block and will reject the incoming) finished while in validate block'.format(cur_node.id)}
+                return jsonify(response), 400
+            else:
+                response = {'message': 'Block rejected from {} - hash is not valid '.format(cur_node.id)}
+                return jsonify(response), 400
         #periptwsi conflict: ean to previous hash tou block den uparxei sthn alysida
         #etsi diaxwrizetai apo thn periptwsi tis deuterhs afiksis block apo ton tautoxrono miner
-    elif cur_node.validate_block(block) and not(cur_node.blockchain.hash_exists_in_chain(block.previous_hash)):
+    elif not(cur_node.blockchain.hash_exists_in_chain(block.previousHash)) and cur_node.validate_block(block):
         #TODO: Thread needed?, asks for chain every node, mporei kai oxi
         cur_node.resolve_conflict()
         response = {'message': 'Resolving Conflict'}
         return jsonify(response), 200
     else:
+        print('BLOCK REJECTED BECAUSE PREVIOUS HASH IS NOT THE SAME - MULTIPLE ARRIVALS')
         response = jsonify({'message': 'Block rejected from {} - previous hash not the same - second block received from simultaneous miner'.format(cur_node.id)})
         return response, 400
 

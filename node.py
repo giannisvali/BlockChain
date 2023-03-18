@@ -215,7 +215,7 @@ class Node:
             self.wallet.update_utxo(current_trans.sender_address, current_trans.transaction_inputs,
                                     current_trans.transaction_output)
 
-            self.blockchain.add_transaction(current_trans)
+            self.blockchain.add_transaction(current_trans.to_dict())
             thread = threading.Thread(target=self.mine_block)
             thread.start()
             thread.join()  #prosthesa auto gia sigouria
@@ -317,8 +317,9 @@ class Node:
         # block to json
         # use proper endpoint
         # send block as dictionary containing its details
+        print('NODE {} WILL SEND BLOCK TO NODE {}'.format(self.id,node_url))
         response = requests.post(node_url + '/receive-block', json=mined_block.to_dict())
-        print("send block response:", response, flush=True)
+        print("send block response: {} {}".format(response.status_code, response.json()))
         responses.append((response.json(), node_url))
 
     def broadcast_block(self, mined_block):
@@ -371,6 +372,17 @@ class Node:
                                     incoming_block.previousHash,
                                     incoming_block.nonce, incoming_block.timestamp)
         # compare expected hash to incoming block's hash, if True block is valid
+        print('HASHES ARE EQUAL {}'.format(expected_hash == temp_incoming_block.hash))
+        print('RE-HASHED BLOCK INDEX {} EXPECTED {}'.format(temp_incoming_block.index, incoming_block.index ))
+        print('LIST OF TRANSACTIONS EQUALITY {}'.format(temp_incoming_block.listOfTransactions == incoming_block.listOfTransactions))
+        print('RE-HASHED BLOCK previousHash {} EXPECTED {}'.format(temp_incoming_block.previousHash, incoming_block.previousHash))
+        print('RE-HASHED BLOCK nonce {} EXPECTED {}'.format(temp_incoming_block.nonce, incoming_block.nonce))
+        print('RE-HASHED BLOCK timestamp {} EXPECTED {}'.format(temp_incoming_block.timestamp, incoming_block.timestamp))
+        print('RE-HASHED BLOCKS HASH IS : {} \n WHILE EXPECTED IS {}'.format(temp_incoming_block.hash, incoming_block.hash))
+        print('DIFFICULTY ZEROS CHECK {}'.format(temp_incoming_block.hash[0:self.blockchain.difficulty] == (
+                    '0' * self.blockchain.difficulty)))
+        print('VALIDATE BLOCK RETURNS {}'.format(expected_hash == temp_incoming_block.hash and temp_incoming_block.hash[0:self.blockchain.difficulty] == (
+                    '0' * self.blockchain.difficulty)))
         return expected_hash == temp_incoming_block.hash and temp_incoming_block.hash[0:self.blockchain.difficulty] == (
                     '0' * self.blockchain.difficulty)
 
