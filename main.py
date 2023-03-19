@@ -10,7 +10,7 @@ import threading
 import jsonpickle
 import base64
 import time
-
+import datetime
 #aaaaaaaaaa
 app = Flask(__name__)
 CORS(app)
@@ -68,9 +68,11 @@ def create_client_transaction():
     details = request.json
     wallet_public_key = details['wallet_public_key'] #get public key of receiver
     NBC = details['NBC']
-    cur_node.create_transaction(wallet_public_key, int(NBC))
-    return jsonify({"response": None}), 201   #na allaxthei auto prepei na baloume thn create_trtansaction na gyrnaei kati kai oxi apla na printarei
-                                                #mesa ths
+    valid_transaction = cur_node.create_transaction(wallet_public_key, int(NBC))
+
+    if not valid_transaction:
+        return jsonify({"response": None}), 403
+    return jsonify({"response": None}), 201
 
     # if node_id not in app.config['nodes_details']:
     #     return jsonify({"node_details": None}), 404
@@ -219,9 +221,9 @@ def initial_transaction():
 def receive_transactions_request():
     print("kanw receive to transaction request")
     data = request.json
-    cur_node.execute_file_transactions(data['filepath'])
+    processed_transactions = cur_node.execute_file_transactions(data['filepath'])
 
-    return jsonify({'status': 'success'})
+    return jsonify({'status': 'success', 'processed_transactions': processed_transactions})
 
 
 def send_transactions_request(node_id, cur_node_details, filepath, responses):
@@ -231,6 +233,31 @@ def send_transactions_request(node_id, cur_node_details, filepath, responses):
     print("send transaction request to node", temp_node_url)
     data = {"filepath": filepath}
     response = requests.post(temp_node_url + '/receive-transactions-request', json=data)
+    responses.append((response, cur_node_details)) #ama theloume na printaroume mhnymata isws na baloume to node_id anti gia to cur_node_details
+
+
+@app.route('/calculate-block-time', methods=['GET'])
+def calculate_block_time():
+    print("kanw receive to transaction request")
+    block_timestamps = cur_node.blockchain.block_timestamps
+    data = request.json
+
+    block_timestamps.insert(0, datetime.datetime.strptime(data['start_block_timestamp'], '%Y-%m-%dT%H:%M:%S.%f'))#.fromisoformat())
+    timestamp_differences = []
+    for i in range(len(block_timestamps) - 1):
+        diff = block_timestamps[i + 1] - block_timestamps[i]  #calculate time difference
+        timestamp_differences.append(diff.total_seconds())  #add difference to list
+
+    avg_diff = sum(timestamp_differences) / len(timestamp_differences)  #calculate average difference
+    print(f"Average time difference: {avg_diff:.4f} seconds")
+    return jsonify({'status': 'success', 'block_time': avg_diff})
+
+
+def block_time(node_id, cur_node_details, start_block_timestamp, responses):
+    wallet_public_key, ip_address, port = cur_node_details
+    temp_node_url = "http://" + ip_address + ":" + port
+    data = {"start_block_timestamp": start_block_timestamp.isoformat()}
+    response = requests.get(temp_node_url + '/calculate-block-time', json=data)
     responses.append((response, cur_node_details))
 
 def begin_transactions():
@@ -238,8 +265,12 @@ def begin_transactions():
     responses = []
     path_base = "./" + str(cur_node.no_nodes) + "nodes/"
     path_base = "./" + "5" + "nodes/" #na to diwxw auto metaaaa!~`!!
+    start_time = time.perf_counter()
+    start_block_timestamp = datetime.datetime.now()
+
+
     for cur_key, cur_values in app.config['nodes_details'].items():
-        filepath = path_base + "transactions" + cur_key + ".txt"
+        filepath = path_base + "transaction" + cur_key + ".txt"  #na to epistrepsw se "transactions" anti gia "transaction"
         thread = threading.Thread(target=send_transactions_request, args=(cur_key, cur_values, filepath, responses))
         threads.append(thread)
         thread.start()
@@ -247,10 +278,48 @@ def begin_transactions():
     for thread in threads:
         thread.join()
 
+    elapsed_time = time.perf_counter() - start_time
+    print("Elapsed time: {:.4f} seconds".format(elapsed_time))
+
+    total_transactions = 0
     for resp, node_i in responses:
         if resp.status_code != 200:  # edw isws baloume se poio node yphrxe problhma xrhsimopoiwntas ta stoixeia tou node_i = (wallet_public_key, ip_address, port)
             return 'Error beginning transactions to some nodes.'
-    return 'Transactions are being executed to all nodes successfully.'
+
+        total_transactions+=resp.json()['processed_transactions']
+
+    print("Throughput: {:.4f} transactions per second".format(total_transactions/elapsed_time))
+
+
+
+    threads = []
+    responses = []
+    for cur_key, cur_values in app.config['nodes_details'].items():
+        thread = threading.Thread(target=block_time, args=(cur_key, cur_values, start_block_timestamp, responses))
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    total_block_time = 0
+    for resp, node_i in responses:
+        if resp.status_code != 200:  # edw isws baloume se poio node yphrxe problhma xrhsimopoiwntas ta stoixeia tou node_i = (wallet_public_key, ip_address, port)
+            return 'Error beginning transactions to some nodes.'
+
+        total_block_time += resp.json()['block_time']
+
+
+    #Block time for each node is calculated. To find the global block time we just have to take the average block time for all the nodes,
+
+    print("Block time: {:.4f} seconds".format(total_block_time/len(responses)))
+
+    with open('log_' + str(cur_node.no_nodes) + 'nodes.txt', 'w') as f:
+        f.write("Elapsed time: {:.4f} seconds\n".format(elapsed_time))
+        f.write("Throughput: {:.4f} transactions per second\n".format(total_transactions/elapsed_time))
+        f.write("Block time: {:.4f} seconds\n".format(total_block_time/len(responses)))
+
+    print('Transactions were executed to all nodes successfully.')
 
 
 

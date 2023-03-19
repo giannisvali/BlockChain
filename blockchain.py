@@ -1,4 +1,5 @@
 from block import Block
+import datetime
 
 
 class Blockchain:
@@ -9,11 +10,13 @@ class Blockchain:
         self.capacity = capacity
         self.transactions_unmined = []  # keep list of transactions not mined yet
         self.transactions_to_mine = []
+        self.block_timestamps = []
 
     # insert block to chain
     def add_block(self, block):
         # self.Hash_set.add(block.currentHash)
         self.chain.append(block)
+        self.block_timestamps.append(datetime.datetime.now())
 
     #  add transaction to the list of unmined tranasactions
     def add_transaction(self, transaction):

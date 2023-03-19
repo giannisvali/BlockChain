@@ -183,7 +183,7 @@ class Node:
 
         if len(transaction_input) == 0:
             print("Not enough money for the transaction!")
-            return None
+            return False
 
         print("Node with wallet public key:", receiver_address, "will receive ", amount, "NBC")
         print("Node with wallet public key:", self.wallet.get_public_key(), "will have ", change,
@@ -219,6 +219,7 @@ class Node:
             thread = threading.Thread(target=self.mine_block)
             thread.start()
             thread.join()  #prosthesa auto gia sigouria
+            return True
 
         else:
             response = requests.get(self.bootstrap_node_url + '/reduce-transaction-output-id')
@@ -228,6 +229,7 @@ class Node:
                 response_dict = response.json()
 
             print("Not validate transaction!!")
+            return False
 
     # remember to broadcast it
 
@@ -314,22 +316,40 @@ class Node:
     #
 
     def execute_file_transactions(self, filepath):
+        processed_transactions = 0
         print("Start of file transactions execution!")
         with open(filepath, 'r') as f:
-            # Loop over each line in the file
             for line in f:
+                processed_transactions+=1
                 node_id, amount = line.split()
                 node_id = node_id[2:]
+
+                if node_id == self.id:
+                    print("A node cannot send money to itself. Transaction aborted.")
+                    continue
+
                 amount = int(amount)  #KAI EDW NA DOUME MHPWS TO KANOUME FLOAT
                                       #PANTWS STA ARXEIA EXEI MONO INTS
 
-                if int(node_id) < 3: #na bgei auto!!!
+
+                if amount <=0 :
+                    print("Invalid amount. Amount must be a positive integer. Transaction aborted.")
+                    continue
+
+                if amount > self.wallet.balance():  #aytos o elegxos ginetai kai metepeita sthn create_Transaction alla
+                                                    #mporei na mpei kai edw gia na mhn jalestei kan h create_transaction.
+                    print("Not enough money. Transaction aborted.")
+                    continue
+
+
+                if int(node_id) < 2: #na bgei auto!!!
                     receiver_public_key = self.network[node_id][0]
                     self.create_transaction(receiver_public_key, amount)
 
 
                 #sel.network exei dict{id:[wallet_public_key, ip,port]}
         print("End of file transactions execution!")
+        return processed_transactions
 
     def send_block(self, node_url, mined_block, responses):
         # block to json
