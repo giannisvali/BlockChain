@@ -116,8 +116,10 @@ def reduce_transaction_output_id():
 @app.route('/receive-block', methods=['POST'])
 def receive_block():
     print('------------------------- BLOCK RECEIVED -------------------------------------------------------------\n')
-    block_dict = request.json
+    block_data = request.get_json(force = True)
+    block_dict = dict(jsonpickle.decode(block_data))
     # create block object from dictionary received
+    # print('\n \n RECEIVED BLOCK TRANSACTIONS {} \n \n', block_dict['transactions'])
     block = Block(index=block_dict['index'], timestamp=block_dict['timestamp'], transactions=block_dict['transactions'],
                   nonce=block_dict['nonce'], previousHash=block_dict['previous_hash'], hash=block_dict['hash'])
     # if mined block previous hash = node's last block's hash and hash of mined block is valid --> add block else reject
