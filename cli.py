@@ -54,9 +54,33 @@ def view_transactions(cur_node_url):
     response = response.json()
     transactions = response['transactions']
     print(transactions)
+    print("TRANSACTIONS INSIDE THE LATEST VALIDATED BLOCK")
+    counter = 1
+
+    # return OrderedDict({'transaction_id': self.transaction_id,
+    #                     'sender_address': self.sender_address,
+    #                     'recipient_address': self.receiver_address,
+    #                     'transaction_inputs': self.transaction_inputs,
+    #                     'transaction_outputs': self.transaction_output,
+    #                     'value': self.amount,
+    #                     'signature': self.signature})
     for tr in transactions:
-        print(tr.items())
-        # kai edw printarw ta key-value pairs me ta antistoixa mhnymata
+        # tr_dict = tr.items()
+        # print(tr)
+        # print(type(tr))
+        # print(tr_dict)
+        print('------------------------- Transaction id {}-------------------------------\n'.format(tr["transaction_id"]))
+        print("Sender Address:", tr['sender_address'])
+        print("Recipient Address:",tr['recipient_address'])
+        print("Transaction Inputs:",tr['transaction_inputs'])
+        print("Transaction Outputs:",tr['transaction_outputs'])
+        print("Amount:",tr['value'])
+        print("Signature:",tr['signature'])
+        print("\n")
+
+        # print(tr.items())
+        # print()
+        counter+=1
 
 print("Welcome to Noobcash client!")
 cur_node_id = None
@@ -108,9 +132,15 @@ while(1):
         #     print("Invalid IPv4 address!")
         #     continue
 
+        if command[1] == cur_node_details[0]:
+            print("A node cannot send money to itself. Transaction aborted.")
+            continue
+
+
         if not (command[2].isdigit() or float(command[2])>0.0):
             print("Amount must be a positive number!")
             continue
+
 
         wallet_public_key = command[1]
         NBC = command[2]
@@ -122,13 +152,19 @@ while(1):
         response = response.json()
 
         response = requests.post(cur_node_url + '/create-client-transaction', json = details)
-        #EDW THELEI NA DW TO RESPONSE POU THA FTIAXTEI APO THN CREATE_TRANSACTION
+
+        if not check_status_code(response.status_code, 201):
+            print("Transaction was not successful!")
+            continue
+
+        print("Successful transaction.")
+
         #GENIKA NA DOUME AN THA DEXOMASTE KAI FLOATS WS AMOUNT STA TRANSACTIONS, OXI MONO EDW PANTOY STO PROGRAMMA GIATI TWRA SKAEI ME FLOATS
         #proeraitiko apla gia kalh praktikh isws prosthesoume merikes getter/setters functions.
 
     elif command[0] == "view" and len(command) == 1:
 
-        view_transactions(cur_node_url)
+        view_transactions(bootstrap_node_url)
 
 
     else:

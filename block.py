@@ -37,7 +37,7 @@ class Block:
         difficulty_zeros = '0' * difficulty
         print('initial chain length {}'.format(chain_length))
         print('initial chain {}'.format(chain))
-        print('mining started')
+        #print('mining started')
         # check if first difficulty characters of hash are zeros
         while self.hash[0:difficulty] != difficulty_zeros:
             self.nonce += 1
