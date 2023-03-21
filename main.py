@@ -153,6 +153,7 @@ def receive_block():
 
 @app.route('/chain', methods=['GET'])
 def give_chain():
+    print('-----------------------------------GIVE CHAIN---------------------------------------------')
     response = jsonpickle.encode(cur_node.blockchain.chain, unpicklable=True)
     return jsonify(response), 200
 

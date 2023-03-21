@@ -435,14 +435,16 @@ class Node:
         print('\n--------------------------------------INCOMING TRANSACTIONS MINED -------------------------------------------------\n')
         print('TRANSACTIONS TO MINE {}'.format(str(''.join(str(x) for x in incoming_block.listOfTransactions)).encode('utf-8')))
         print('\n----------------------------------------------------------------------------------------------------------\n')
-        return expected_hash == temp_incoming_block.hash and temp_incoming_block.hash[0:self.blockchain.difficulty] == (
-                    '0' * self.blockchain.difficulty)
+        return temp_incoming_block.hash[0:self.blockchain.difficulty] == ('0' * self.blockchain.difficulty) and temp_incoming_block.hash == incoming_block.hash
+        # return expected_hash == temp_incoming_block.hash and temp_incoming_block.hash[0:self.blockchain.difficulty] == (
+        #             '0' * self.blockchain.difficulty)
 
     def get_chain(self, node_url, responses):
         response = requests.get(node_url + '/chain')
         responses.append(response)
 
     def resolve_conflict(self):
+        print('--------------RESOLVE CONFLICT-----------------------')
         threads = []
         responses = []
         for key, values in self.network.items():
