@@ -12,11 +12,23 @@ class Blockchain:
         self.transactions_to_mine = []
         self.block_timestamps = []
 
+
+    def set_chain(self, chain):
+        self.chain = chain
+
+    def set_unmined_transactions(self, unmined_transactions):
+        self.transactions_unmined = unmined_transactions
+    def chain_to_dict(self):
+        chain = []
+        for block in self.chain:
+            chain.append(block.to_dict())
+        return chain
     # insert block to chain
-    def add_block(self, block):
+    def add_block(self, block, timestamp = True):
         # self.Hash_set.add(block.currentHash)
         self.chain.append(block)
-        self.block_timestamps.append(datetime.datetime.now())
+        if timestamp:
+            self.block_timestamps.append(datetime.datetime.now())
 
     #  add transaction to the list of unmined tranasactions
     def add_transaction(self, transaction):

@@ -56,7 +56,7 @@ class Node:
 
 
 
-            self.blockchain.add_block(Block(previousHash=1, nonce=0, index=0, transactions=[trans.to_dict()]))
+            self.blockchain.add_block(Block(previousHash=1, nonce=0, index=0, transactions=[trans.to_dict()]), timestamp=False)
 
             print(self.id)
             self.network[self.id] = (self.wallet.get_public_key(), self.ip_address, self.port)
@@ -68,10 +68,10 @@ class Node:
             self.id = self.insert_into_network()
             response = requests.get(self.bootstrap_node_url + '/chain')
             self.check_status_code(response.status_code, 200)
-            chain = jsonpickle.decode(response.json())
-            if self.validate_chain(chain):
-                print("Chain received from bootstrap has been validated.")
-                self.blockchain.chain = chain
+            # chain = jsonpickle.decode(response.json())
+            # if self.validate_chain(chain):
+            #     print("Chain received from bootstrap has been validated.")
+            #     self.blockchain.chain = chain
 
 
 
@@ -251,6 +251,7 @@ class Node:
         for key, values in self.network.items():
             if str(key) != str(self.id):
                 print("den apefyga to brodcast toy bootstrap")
+                print("network:", self.network.items())
                 wallet_public_key, ip_address, port = values
                 print(ip_address, port)
                 node_url = 'http://' + ip_address + ":" + port
@@ -349,6 +350,7 @@ class Node:
 
                 #sel.network exei dict{id:[wallet_public_key, ip,port]}
         print("End of file transactions execution!")
+        print(self.wallet.balance())
         return processed_transactions
 
     def send_block(self, node_url, mined_block, responses):

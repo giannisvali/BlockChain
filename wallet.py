@@ -42,6 +42,18 @@ class Wallet:
 			else:
 				self.UTXOs[address].append((transaction_output_id, amount))
 
+
+	def set_utxo(self, utxo):
+		print("UTXO SET:", utxo)
+		for key, value in utxo.items():
+			temp_list = []
+			for item in value:
+				tup = tuple(item)
+				temp_list.append(tup)
+			utxo[key] = temp_list
+
+		self.UTXOs = utxo
+
 	def get_public_key(self):
 		return self.public_key
 

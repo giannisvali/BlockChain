@@ -157,32 +157,82 @@ def give_chain():
 
 @app.route('/receive-network', methods=['POST'])
 def receive_network():
-    print("kanw receive to network")
-    all_details = request.json
-    app.config['nodes_details'] = all_details
+    print("kanw receive to network", flush = True)
+    data = request.json
+    app.config['nodes_details'] = data['details']
     cur_node.set_network(app.config['nodes_details'])
     print("APP CONFIG:", app.config['nodes_details'])
-    wallet_public_key, ip_address, port = app.config['nodes_details']['0']  #bootstrap node details
-    cur_node.wallet.update_utxo(wallet_public_key, [],
-     [(0, 0, wallet_public_key, 100 * no_nodes)]) #sender, transaction_input, transaction_output)
 
-    print("RECEIVE NETWORK GET UTXOS", flush = True)
-    print(cur_node.wallet.get_UTXOs(),flush = True)
+
+    cur_node.wallet.set_utxo(data['UTXOs'])
+    chain = jsonpickle.decode(data['chain'])
+    if cur_node.validate_chain(chain):
+        cur_node.blockchain.set_chain(chain)
+
+    cur_node.blockchain.set_unmined_transactions(data['unmined_transactions'])
+
+
+    # wallet_public_key, ip_address, port = app.config['nodes_details']['0']  #bootstrap node details
+    #
+    # cur_node.wallet.update_utxo(wallet_public_key, [],
+    #  [(0, 0, wallet_public_key, 100 * no_nodes)]) #sender, transaction_input, transaction_output)
+    #
+    #
+    # print("RECEIVE NETWORK GET UTXOS", flush = True)
+    # print(cur_node.wallet.get_UTXOs(),flush = True)
 
     return jsonify({'status': 'success'})
 
 
-def send_details_to_nodes(rest_nodes_details, node_id, cur_node_details,  responses):
+
+
+def send_details_to_node(rest_nodes_details, cur_node_details):
     wallet_public_key, ip_address, port = cur_node_details
     print(ip_address, port)
     temp_node_url = "http://" + ip_address + ":" + port
     print("send_details_to_node", temp_node_url)
     time.sleep(0.01)
     response = requests.post(temp_node_url + '/receive-network', json=rest_nodes_details)
-    #responses.append((response.json(), node_url))
-    responses.append((response, cur_node_details))
 
-def broadcast_nodes_details():
+    #responses.append((response.json(), node_url))
+    return response
+
+@app.route('/update-network', methods=['POST'])
+def update_network():
+    print("kanw update to network")
+    data = request.json
+
+    app.config['nodes_details'][str(data["details"]['id'])] = (data["details"]['wallet_public_key'], data["details"]['ip_address'], data["details"]['port'])
+    cur_node.set_network(app.config['nodes_details'])
+
+def send_details_to_nodes(rest_nodes_details, cur_node_id, cur_node_details, new_node_details, UTXOs, chain, unmined_transactions, responses):
+    time.sleep(0.01)
+    #args=(temp_dict, cur_key, cur_values, new_node_details, UTXOs, chain, unmined_transactions, responses))
+
+    if str(cur_node_id) == str(new_node_details['id']):
+        #time.sleep(1)
+        temp_node_url = "http://" + new_node_details['ip_address'] + ":" + new_node_details['port']
+        print("send_details_to_node", temp_node_url)
+
+        data = {"details": rest_nodes_details, "UTXOs": UTXOs, "chain": jsonpickle.encode(chain, unpicklable=True), "unmined_transactions": unmined_transactions}
+        response = requests.post(temp_node_url + '/receive-network', json=data)
+        #responses.append((response.json(), node_url))
+        responses.append((response, cur_node_details))
+    else:
+
+        wallet_public_key, ip_address, port = cur_node_details
+        print(ip_address, port)
+        temp_node_url = "http://" + ip_address + ":" + port
+        print("send_details_to_node", temp_node_url)
+
+        data = {"details": new_node_details}
+
+        response = requests.post(temp_node_url + '/update-network', json=data)
+        # responses.append((response.json(), node_url))
+        responses.append((response, cur_node_details))
+
+
+def broadcast_nodes_details(UTXOs, chain, unmined_transactions, new_node_details):
     threads = []
     responses = []
 
@@ -190,7 +240,7 @@ def broadcast_nodes_details():
         if str(cur_key) != '0':
             print("CUR KEYYY", cur_key, cur_values)
             temp_dict = {key: value for key, value in app.config['nodes_details'].items()}
-            thread = threading.Thread(target=send_details_to_nodes, args=(temp_dict, cur_key, cur_values, responses))
+            thread = threading.Thread(target=send_details_to_nodes, args=(temp_dict, cur_key, cur_values, new_node_details, UTXOs, chain, unmined_transactions, responses))
             threads.append(thread)
             thread.start()
 
@@ -205,14 +255,10 @@ def broadcast_nodes_details():
     return 'Information sent to all nodes successfully.'
 
 
-def initial_transaction():
+def initial_transaction(wallet_public_key):
 
-    for cur_key, cur_values in app.config['nodes_details'].items():
-        #if str(cur_key) != '0':
-        if str(cur_key) != '0':
-            print("eimai sto initial transaction")
-            wallet_public_key = cur_values[0]
-            cur_node.create_transaction(wallet_public_key, 100)
+    print("wallet public key:", wallet_public_key)
+    cur_node.create_transaction(wallet_public_key, 100)
 
     print("teleiwsa ta initial transactions")
 
@@ -325,54 +371,36 @@ def begin_transactions():
 
 
 
-def complete_network():
-    print("complete1")
-    cur_node.set_network(app.config['nodes_details'])
-    print("complete2")
+def complete_network(new_node_details):
 
-    broadcast_nodes_details()
-    print("complete3")
+    update_nodes_details(new_node_details)
+    broadcast_nodes_details(cur_node.wallet.UTXOs, cur_node.blockchain.chain,
+                            cur_node.blockchain.get_unmined_transactions(), new_node_details)
 
-    initial_transaction()
-    print("complete4")
+    initial_transaction(new_node_details['wallet_public_key'])
 
-    begin_transactions()
-    print("complete5")
+    app.config['node_counter'] += 1
+    if app.config['node_counter'] == cur_node.no_nodes:
+        print("mazeythkame oloi!")
+        begin_transactions()
 
 
 
 def update_nodes_details(details):
 
-    #app.config['nodes_details'][details['id']] = (details['wallet_public_key'].encode('utf-8'), details['ip_address'], details['port'])
     app.config['nodes_details'][str(details['id'])] = (details['wallet_public_key'], details['ip_address'], details['port'])
-    #base64.b64decode
+    cur_node.set_network(app.config['nodes_details'])
 
 @app.route('/receive-details', methods=['POST'])
 def receive_details():
     print("mphka sto receive details", flush = True)
     data = request.get_data()
-    details = json.loads(data)
-    # details = request.get_json()
-    # print(type(details))
-    update_nodes_details(details)
+    new_node_details = json.loads(data)
 
-    app.config['node_counter'] += 1
-    if app.config['node_counter'] == cur_node.no_nodes:#details['no_nodes']:
-        print("mazeythkame oloi!")
-        bootstrap_details = {'id': cur_node.id,
-                   #'wallet_public_key': cur_node.wallet.get_public_key().decode('utf-8'),
-                   'wallet_public_key': cur_node.wallet.get_public_key(),
-                   'ip_address': cur_node.ip_address,
-                   'port': cur_node.port,
-                   'no_nodes': cur_node.no_nodes}
+    print(new_node_details)
+    thread = threading.Thread(target=complete_network, args=([new_node_details]))
+    thread.start()
 
-        update_nodes_details(bootstrap_details)
-        print("APP CONFIG AFTER BOOTSTRAP:", app.config["nodes_details"])
-
-        #broadcast_nodes_details()
-        threading.Thread(target=complete_network).start()
-
-        # edw prepei na proste9ei na ksekinsoume gia ola ta nodes ta transaction??
     return jsonify({'status': 'success'})
 
 
@@ -422,6 +450,15 @@ if __name__ == '__main__':
     global cur_node
     cur_node = Node(ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, capacity, difficulty, blockchain_snapshot=None,
                 key_length=2048)
+    if ip_address == bootstrap_ip_address:
+        bootstrap_details = {'id': cur_node.id,
+                             # 'wallet_public_key': cur_node.wallet.get_public_key().decode('utf-8'),
+                             'wallet_public_key': cur_node.wallet.get_public_key(),
+                             'ip_address': cur_node.ip_address,
+                             'port': cur_node.port,
+                             'no_nodes': cur_node.no_nodes}
+
+        update_nodes_details(bootstrap_details)
     app.run(host='0.0.0.0', port=app_port)#, debug=True)
 
 
