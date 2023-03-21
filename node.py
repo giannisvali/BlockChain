@@ -415,30 +415,26 @@ class Node:
         # incoming block's nonce, incoming block's timestamp
         temp_block = Block(len(self.blockchain.chain), expected_transactions, self.blockchain.get_last_block_hash(),
                            incoming_block.nonce, incoming_block.timestamp)
-        print('BLOCKS TRANSACTIONS ARE EQUAL WITH INCOMING BLOCK TRANSACTIONS {}'.format(expected_transactions == incoming_block.listOfTransactions))
-        print('BLOCKS PREV HASH IS EQUAL WITH INCOMING BLOCK PREV HASH {}'.format(temp_block.previousHash == incoming_block.previousHash))
-        print('BLOCKS NONCE IS EQUAL WITH INCOMING BLOCK NONCE {}'.format(temp_block.nonce == incoming_block.nonce))
-        print('BLOCKS TIMESTAMP IS EQUAL WITH INCOMING BLOCK TIMESTAMP {}'.format(temp_block.timestamp == incoming_block.timestamp))
-        print('BLOCKS HASH IS EQUAL WITH INCOMING BLOCK HASH {}'.format(temp_block.hash == incoming_block.hash))
-        print('\n-----------------------------------TRANSACTIONS TO MINE -------------------------------------------------\n')
-        print('TRANSACTIONS TO MINE {}'.format(str(''.join(str(x) for x in temp_block.listOfTransactions)).encode('utf-8')))
-        print('\n-------------------------------------- -------------------------------------------------\n')
-        print('\n--------------------------------------INCOMING TRANSACTIONS MINED -------------------------------------------------\n')
-        print('TRANSACTIONS TO MINE {}'.format(str(''.join(str(x) for x in incoming_block.listOfTransactions)).encode('utf-8')))
-        print('\n----------------------------------------------------------------------------------------------------------\n')
         # calculate expected hash
         expected_hash = temp_block.hash
         # recalculate incoming block's hash, in case its wrong
         temp_incoming_block = Block(incoming_block.index, incoming_block.listOfTransactions,
                                     incoming_block.previousHash,
                                     incoming_block.nonce, incoming_block.timestamp)
+        print('HASHES EQUALITY {}'.format(temp_block.hash == incoming_block.hash))
+        print('BLOCKS PREV HASH IS EQUAL WITH INCOMING BLOCK PREV HASH {}'.format(temp_block.previousHash == incoming_block.previousHash))
+        print('BLOCKS NONCE IS EQUAL WITH INCOMING BLOCK NONCE {}'.format(temp_block.nonce == incoming_block.nonce))
+        print('BLOCKS TIMESTAMP IS EQUAL WITH INCOMING BLOCK TIMESTAMP {}'.format(temp_block.timestamp == incoming_block.timestamp))
+        print('BLOCKS HASH IS EQUAL WITH INCOMING BLOCK HASH {}'.format(temp_block.hash == incoming_block.hash))
         # compare expected hash to incoming block's hash, if True block is valid
         print('REHASH EQUALITY  {}'.format(temp_incoming_block.hash == incoming_block.hash))
-        print('DIFFICULTY ZEROS CHECK {}'.format(temp_incoming_block.hash[0:self.blockchain.difficulty] == (
-                    '0' * self.blockchain.difficulty)))
-        # print('VALIDATE BLOCK RETURNS {}'.format(expected_hash == temp_incoming_block.hash and temp_incoming_block.hash[0:self.blockchain.difficulty] == (
-        #             '0' * self.blockchain.difficulty)))
-        return temp_incoming_block.hash == incoming_block.hash
+        print('DIFFICULTY ZEROS CHECK {}'.format(temp_incoming_block.hash[0:self.blockchain.difficulty] == ('0' * self.blockchain.difficulty)))
+        print('\n-----------------------------------TRANSACTIONS TO MINE -------------------------------------------------\n')
+        print('TRANSACTIONS TO MINE {}'.format(str(''.join(str(x) for x in temp_block.listOfTransactions)).encode('utf-8')))
+        print('\n-------------------------------------- -------------------------------------------------\n')
+        print('\n--------------------------------------INCOMING TRANSACTIONS MINED -------------------------------------------------\n')
+        print('TRANSACTIONS TO MINE {}'.format(str(''.join(str(x) for x in incoming_block.listOfTransactions)).encode('utf-8')))
+        print('\n----------------------------------------------------------------------------------------------------------\n')
         return expected_hash == temp_incoming_block.hash and temp_incoming_block.hash[0:self.blockchain.difficulty] == (
                     '0' * self.blockchain.difficulty)
 

@@ -1,3 +1,5 @@
+import json
+
 from block import Block
 import datetime
 
@@ -20,7 +22,8 @@ class Blockchain:
 
     #  add transaction to the list of unmined tranasactions
     def add_transaction(self, transaction):
-        self.transactions_unmined.append(transaction)
+        # json dumps here avoid differences in hashes (parenthesis-bracket)
+        self.transactions_unmined.append(json.dumps(transaction))
         # self.pendingTransactions.append(transaction)
 
     def get_last_block_hash(self):
