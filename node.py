@@ -35,6 +35,8 @@ class Node:
 
         self.bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
         self.wallet = self.generate_wallet(key_length)
+        # use flag to see when a block is under mining
+        self.is_mining = False
 
         # self.id = self.get_node_id()
         if ip_address == bootstrap_ip_address:
@@ -216,9 +218,11 @@ class Node:
                                     current_trans.transaction_output)
 
             self.blockchain.add_transaction(current_trans.to_dict()) #evala kai edw to_dict, den to eixame balei
-            thread = threading.Thread(target=self.mine_block)
-            thread.start()
-            thread.join()  #prosthesa auto gia sigouria
+            if len(self.blockchain.get_unmined_transactions()) >= self.blockchain.capacity and not self.is_mining:
+                self.is_mining = True
+                thread = threading.Thread(target=self.mine_block)
+                thread.start()
+                thread.join()  #prosthesa auto gia sigouria
             return True
 
         else:
@@ -300,8 +304,10 @@ class Node:
                                         trans["transaction_outputs"])
                 print("Validate transaction v1!!!")
                 self.blockchain.add_transaction(trans)
-                thread = threading.Thread(target=self.mine_block)
-                thread.start()
+                if len(self.blockchain.get_unmined_transactions()) >= self.blockchain.capacity and not self.is_mining:
+                    self.is_mining = True
+                    thread = threading.Thread(target=self.mine_block)
+                    thread.start()
                 response = jsonify({"public_key": self.wallet.get_public_key(), "approve": True})
             else:
                 print("Not validate amount for the transaction!!Scammer find!")
@@ -354,11 +360,12 @@ class Node:
         return processed_transactions
 
     def send_block(self, node_url, mined_block, responses):
+        # print('\n \n \n  -----  TRANSACTIONS: -----------{} \n \n \n'.format(mined_block.to_dict()['transactions']))
         # block to json
         # use proper endpoint
         # send block as dictionary containing its details
         print('NODE {} WILL SEND BLOCK TO NODE {}'.format(self.id,node_url))
-        response = requests.post(node_url + '/receive-block', json=mined_block.to_dict())
+        response = requests.post(node_url + '/receive-block', data=json.dumps(jsonpickle.encode(mined_block.to_dict())))
         print("send block response: {} {}".format(response.status_code, response.json()))
         responses.append((response.json(), node_url))
 
@@ -379,11 +386,8 @@ class Node:
         # TODO: prepei na elegxoume an ginetai mining hdh?
         # TODO: h get_mined_block mhpws prepei na kaleitai apo thread? upoloipes entoles mhpws prepei na ektelstoun
         # check if unmined transactions have exceeded capacity
-        print("inserted in mine_block")
-        print(len(self.blockchain.get_unmined_transactions()), self.blockchain.capacity)
         if len(self.blockchain.get_unmined_transactions()) >= self.blockchain.capacity: #EDW AYTO ISWS NA BGEI EKTOS THS SYNARTHSHS,
                                                                                         #GIA NA MHN ANOIGOUME THREADS XWRIS LOGO
-            print("Mining started.")
             current_chain_length = len(self.blockchain.chain)
             # calculate current chain length and pass it as arg to get_mined_block --> mine
             mined_block = self.blockchain.get_mined_block(chain_length=current_chain_length)
@@ -392,13 +396,17 @@ class Node:
             # else node mined a block and broadcast it to the network
             if mined_block is not None and mined_block.previousHash == self.blockchain.get_last_block_hash():
                 print("Nonce found.")
-                # TODO: define order of block addition and broadcasting
                 self.blockchain.add_block(mined_block)
                 self.broadcast_block(mined_block)
+        self.is_mining = False
+        if len(self.blockchain.get_unmined_transactions()) >= self.blockchain.capacity and not self.is_mining:
+            self.is_mining = True
+            t = threading.Thread(target=self.mine_block)
+            t.start()
 
     def validate_block(self, incoming_block):
-
-        return True
+        print('----------------------------------------VALIDATE BLOCK----------------------------------------------')
+        # return True
         # checks if hash is valid
         # case where transactions_to_mine have not been created yet
         # expected transactions = those that node would mine, and expects to be mined by others
@@ -415,26 +423,30 @@ class Node:
         temp_incoming_block = Block(incoming_block.index, incoming_block.listOfTransactions,
                                     incoming_block.previousHash,
                                     incoming_block.nonce, incoming_block.timestamp)
+        print('HASHES EQUALITY {}'.format(temp_block.hash == incoming_block.hash))
+        print('BLOCKS PREV HASH IS EQUAL WITH INCOMING BLOCK PREV HASH {}'.format(temp_block.previousHash == incoming_block.previousHash))
+        print('BLOCKS NONCE IS EQUAL WITH INCOMING BLOCK NONCE {}'.format(temp_block.nonce == incoming_block.nonce))
+        print('BLOCKS TIMESTAMP IS EQUAL WITH INCOMING BLOCK TIMESTAMP {}'.format(temp_block.timestamp == incoming_block.timestamp))
+        print('BLOCKS HASH IS EQUAL WITH INCOMING BLOCK HASH {}'.format(temp_block.hash == incoming_block.hash))
         # compare expected hash to incoming block's hash, if True block is valid
-        print('HASHES ARE EQUAL {}'.format(expected_hash == temp_incoming_block.hash))
-        print('RE-HASHED BLOCK INDEX {} EXPECTED {}'.format(temp_incoming_block.index, incoming_block.index ))
-        print('LIST OF TRANSACTIONS EQUALITY {}'.format(temp_incoming_block.listOfTransactions == incoming_block.listOfTransactions))
-        print('RE-HASHED BLOCK previousHash {} EXPECTED {}'.format(temp_incoming_block.previousHash, incoming_block.previousHash))
-        print('RE-HASHED BLOCK nonce {} EXPECTED {}'.format(temp_incoming_block.nonce, incoming_block.nonce))
-        print('RE-HASHED BLOCK timestamp {} EXPECTED {}'.format(temp_incoming_block.timestamp, incoming_block.timestamp))
-        print('RE-HASHED BLOCKS HASH IS : {} \n WHILE EXPECTED IS {}'.format(temp_incoming_block.hash, incoming_block.hash))
-        print('DIFFICULTY ZEROS CHECK {}'.format(temp_incoming_block.hash[0:self.blockchain.difficulty] == (
-                    '0' * self.blockchain.difficulty)))
-        print('VALIDATE BLOCK RETURNS {}'.format(expected_hash == temp_incoming_block.hash and temp_incoming_block.hash[0:self.blockchain.difficulty] == (
-                    '0' * self.blockchain.difficulty)))
-        return expected_hash == temp_incoming_block.hash and temp_incoming_block.hash[0:self.blockchain.difficulty] == (
-                    '0' * self.blockchain.difficulty)
+        print('REHASH EQUALITY  {}'.format(temp_incoming_block.hash == incoming_block.hash))
+        print('DIFFICULTY ZEROS CHECK {}'.format(temp_incoming_block.hash[0:self.blockchain.difficulty] == ('0' * self.blockchain.difficulty)))
+        print('\n-----------------------------------TRANSACTIONS TO MINE -------------------------------------------------\n')
+        print('TRANSACTIONS TO MINE {}'.format(str(''.join(str(x) for x in temp_block.listOfTransactions)).encode('utf-8')))
+        print('\n-------------------------------------- -------------------------------------------------\n')
+        print('\n--------------------------------------INCOMING TRANSACTIONS MINED -------------------------------------------------\n')
+        print('TRANSACTIONS TO MINE {}'.format(str(''.join(str(x) for x in incoming_block.listOfTransactions)).encode('utf-8')))
+        print('\n----------------------------------------------------------------------------------------------------------\n')
+        return temp_incoming_block.hash[0:self.blockchain.difficulty] == ('0' * self.blockchain.difficulty) and temp_incoming_block.hash == incoming_block.hash
+        # return expected_hash == temp_incoming_block.hash and temp_incoming_block.hash[0:self.blockchain.difficulty] == (
+        #             '0' * self.blockchain.difficulty)
 
     def get_chain(self, node_url, responses):
         response = requests.get(node_url + '/chain')
         responses.append(response)
 
     def resolve_conflict(self):
+        print('--------------RESOLVE CONFLICT-----------------------')
         threads = []
         responses = []
         for key, values in self.network.items():
