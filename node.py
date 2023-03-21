@@ -47,7 +47,7 @@ class Node:
             self.wallet.update_utxo(self.wallet.get_public_key(), [],
                                     [(0, 0, self.wallet.get_public_key(), 100 * no_nodes)])
 
-            trans = Transaction(transaction_id=0, sender_address=self.wallet.get_public_key(),
+            trans = Transaction(transaction_id=0, sender_address= 0,#sender_address=self.wallet.get_public_key(),
                                 recipient_address=self.wallet.get_public_key(),
                                 transaction_input=[],
                                 transaction_output=[(0, 0, self.wallet.get_public_key(), no_nodes * 100)],
