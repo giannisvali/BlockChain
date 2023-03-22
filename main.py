@@ -207,6 +207,7 @@ def update_network():
 
     app.config['nodes_details'][str(data["details"]['id'])] = (data["details"]['wallet_public_key'], data["details"]['ip_address'], data["details"]['port'])
     cur_node.set_network(app.config['nodes_details'])
+    return jsonify({'status': 'success'})
 
 def send_details_to_nodes(rest_nodes_details, cur_node_id, cur_node_details, new_node_details, UTXOs, chain, unmined_transactions, responses):
     time.sleep(0.01)

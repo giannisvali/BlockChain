@@ -74,7 +74,8 @@ class Node:
             # if self.validate_chain(chain):
             #     print('CHAIN IS VALID')
             #     print("Chain received from bootstrap has been validated.")
-            self.blockchain.chain = chain
+            if self.validate_chain(chain):
+                self.blockchain.chain = chain
             # chain = jsonpickle.decode(response.json())
             # if self.validate_chain(chain):
             #     print("Chain received from bootstrap has been validated.")
