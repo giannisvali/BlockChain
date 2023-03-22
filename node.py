@@ -24,7 +24,7 @@ class Node:
     def __init__(self, ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, capacity, difficulty,
                  blockchain_snapshot=None,
                  key_length=2048):
-
+        print('NODE CONSTRUCTOR')
         self.ip_address = ip_address
         self.port = port
         self.no_nodes = no_nodes
@@ -70,6 +70,11 @@ class Node:
             self.id = self.insert_into_network()
             response = requests.get(self.bootstrap_node_url + '/chain')
             self.check_status_code(response.status_code, 200)
+            chain = jsonpickle.decode(response.json())
+            # if self.validate_chain(chain):
+            #     print('CHAIN IS VALID')
+            #     print("Chain received from bootstrap has been validated.")
+            self.blockchain.chain = chain
             # chain = jsonpickle.decode(response.json())
             # if self.validate_chain(chain):
             #     print("Chain received from bootstrap has been validated.")
@@ -349,9 +354,9 @@ class Node:
                     continue
 
 
-                if int(node_id) < 2: #na bgei auto!!!
-                    receiver_public_key = self.network[node_id][0]
-                    self.create_transaction(receiver_public_key, amount)
+                # if int(node_id) < 2: #na bgei auto!!!
+                receiver_public_key = self.network[node_id][0]
+                self.create_transaction(receiver_public_key, amount)
 
 
                 #sel.network exei dict{id:[wallet_public_key, ip,port]}
