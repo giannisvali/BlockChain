@@ -167,6 +167,16 @@ while(1):
         view_transactions(bootstrap_node_url)
 
 
+    elif command[0] == "chainlength" and len(command) == 1:
+
+        response = requests.get(cur_node_url + '/blockchain-length')
+        if not check_status_code(response.status_code, 200):
+            print("Problem with retrieving blockchain length of current node!")
+            continue
+        response = response.json()
+        print("Blockchain length of current node:", response['length'])
+
+
     else:
         print("Wrong command! Try again.")
 

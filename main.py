@@ -20,6 +20,39 @@ app.config['nodes_details'] = dict()
 app.config['node_counter'] = 1
 app.config['transaction_output_id'] = 1
 
+transaction_lock = threading.Lock()
+nodes_with_lock = []
+
+
+
+@app.route('/blockchain-length', methods=['GET'])
+def blockchain_length():
+    # acquire lock before granting to the slave node
+    return jsonify({'length': len(cur_node.blockchain.chain)}), 200
+
+@app.route('/request_lock', methods=['GET'])
+def request_lock():
+    # acquire lock before granting to the slave node
+    if nodes_with_lock:
+        print("nodes with lock!!!", nodes_with_lock)
+        return jsonify({'status': 'failure'}), 400
+
+    transaction_lock.acquire()
+    nodes_with_lock.append(request.remote_addr)
+    return jsonify({'status': 'success'}), 200
+
+@app.route('/release_lock', methods=['GET'])
+def release_lock():
+    # release lock after the slave node is finished
+    if request.remote_addr not in nodes_with_lock:
+        print("remote addr not in nodes_with_lock!!!")
+        return jsonify({'status': 'failure'}), 400
+
+
+    transaction_lock.release()
+    nodes_with_lock.remove(request.remote_addr)
+
+    return jsonify({'status': 'success'}), 200
 
 
 # def positive_int(value):
@@ -116,6 +149,7 @@ def reduce_transaction_output_id():
 @app.route('/receive-block', methods=['POST'])
 def receive_block():
     print('------------------------- BLOCK RECEIVED -------------------------------------------------------------\n')
+    #cur_node.block_lock.acquire()
     block_data = request.get_json(force = True)
     block_dict = dict(jsonpickle.decode(block_data))
     # create block object from dictionary received
@@ -131,29 +165,41 @@ def receive_block():
             cur_node.blockchain.add_block(block)
             response = jsonify({'message': 'Node {} added block to blockchain'.format(cur_node.id)})
             #print('BLOCK REJECTED BECAUSE HASH IS NOT VALID')
+            #cur_node.block_lock.release()
             return response, 200
         else:
             if cur_chain_length < len(cur_node.blockchain.chain):
                 response = {'message': 'mining (->node added its block and will reject the incoming) finished while in validate block'.format(cur_node.id)}
+                #cur_node.block_lock.release()
+
                 return jsonify(response), 400
             else:
                 response = {'message': 'Block rejected from {} - hash is not valid '.format(cur_node.id)}
+                #cur_node.block_lock.release()
+
                 return jsonify(response), 400
         #periptwsi conflict: ean to previous hash tou block den uparxei sthn alysida
         #etsi diaxwrizetai apo thn periptwsi tis deuterhs afiksis block apo ton tautoxrono miner
-    elif not(cur_node.blockchain.hash_exists_in_chain(block.previousHash)) and cur_node.validate_block(block):
+    elif not(cur_node.blockchain.hash_exists_in_chain(block.previousHash)) and cur_node.validate_block(block):#not(cur_node.blockchain.hash_exists_in_chain(block.previousHash)):#block.previousHash!=cur_node.blockchain.get_last_block_hash():
         #TODO: Thread needed?, asks for chain every node, mporei kai oxi
+
         cur_node.resolve_conflict()
         response = {'message': 'Resolving Conflict'}
+        #cur_node.block_lock.release()
+
         return jsonify(response), 200
     else:
         print('BLOCK REJECTED BECAUSE PREVIOUS HASH IS NOT THE SAME - MULTIPLE ARRIVALS')
         response = jsonify({'message': 'Block rejected from {} - previous hash not the same - second block received from simultaneous miner'.format(cur_node.id)})
+        #cur_node.block_lock.release()
+
         return response, 400
 
 @app.route('/chain', methods=['GET'])
 def give_chain():
     print('-----------------------------------GIVE CHAIN---------------------------------------------')
+    print(cur_node.blockchain.chain)
+    #exit()
     response = jsonpickle.encode(cur_node.blockchain.chain, unpicklable=True)
     return jsonify(response), 200
 
@@ -314,13 +360,13 @@ def begin_transactions():
     threads = []
     responses = []
     path_base = "./" + str(cur_node.no_nodes) + "nodes/"
-    path_base = "./" + "5" + "nodes/" #na to diwxw auto metaaaa!~`!!
+    path_base = "./" + "10" + "nodes/" #na to diwxw auto metaaaa!~`!!
     start_time = time.perf_counter()
     start_block_timestamp = datetime.datetime.now()
 
 
     for cur_key, cur_values in app.config['nodes_details'].items():
-        filepath = path_base + "transaction" + cur_key + ".txt"  #na to epistrepsw se "transactions" anti gia "transaction"
+        filepath = path_base + "transactions" + cur_key + ".txt"  #na to epistrepsw se "transactions" anti gia "transaction"
         thread = threading.Thread(target=send_transactions_request, args=(cur_key, cur_values, filepath, responses))
         threads.append(thread)
         thread.start()

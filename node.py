@@ -17,7 +17,7 @@ from flask import jsonify
 from blockchain import Blockchain
 from block import Block
 import jsonpickle
-
+import time
 
 class Node:
 
@@ -29,6 +29,8 @@ class Node:
         self.port = port
         self.no_nodes = no_nodes
         self.network = dict()
+
+        self.block_lock = threading.Lock()
 
         # TODO: pass capacity to blockchain
         self.blockchain = Blockchain(capacity=capacity, difficulty=difficulty)
@@ -68,14 +70,17 @@ class Node:
             self.NBC = 0
             # bootstrap_node_url = 'http://' + bootstrap_ip_address + ":" + bootstrap_port
             self.id = self.insert_into_network()
-            response = requests.get(self.bootstrap_node_url + '/chain')
-            self.check_status_code(response.status_code, 200)
-            chain = jsonpickle.decode(response.json())
+            # response = requests.get(self.bootstrap_node_url + '/chain')
+            # self.check_status_code(response.status_code, 200)
+            # chain = jsonpickle.decode(response.json())
+
             # if self.validate_chain(chain):
             #     print('CHAIN IS VALID')
             #     print("Chain received from bootstrap has been validated.")
-            if self.validate_chain(chain):
-                self.blockchain.chain = chain
+
+            # if self.validate_chain(chain):
+            #     self.blockchain.chain = chain
+
             # chain = jsonpickle.decode(response.json())
             # if self.validate_chain(chain):
             #     print("Chain received from bootstrap has been validated.")
@@ -228,7 +233,7 @@ class Node:
                 self.is_mining = True
                 thread = threading.Thread(target=self.mine_block)
                 thread.start()
-                thread.join()  #prosthesa auto gia sigouria
+                #thread.join()  #prosthesa auto gia sigouria
             return True
 
         else:
@@ -276,7 +281,7 @@ class Node:
 
         for resp, node in responses:
             if not resp["approve"]:
-                print("Not validate!! Node with public key" + trans_dict["public_key"] + " has problem!" + node)
+                print("Not validate!! Node with public key" + trans_dict["sender_address"] + " has problem!" + node)
                 return False
 
         return True
@@ -314,6 +319,7 @@ class Node:
                     self.is_mining = True
                     thread = threading.Thread(target=self.mine_block)
                     thread.start()
+                    #thread.join()   #na to doume autoO!!O!O
                 response = jsonify({"public_key": self.wallet.get_public_key(), "approve": True})
             else:
                 print("Not validate amount for the transaction!!Scammer find!")
@@ -330,12 +336,14 @@ class Node:
 
     def execute_file_transactions(self, filepath):
         processed_transactions = 0
+        counter=0
         print("Start of file transactions execution!")
         with open(filepath, 'r') as f:
             for line in f:
                 processed_transactions+=1
                 node_id, amount = line.split()
                 node_id = node_id[2:]
+
 
                 if node_id == self.id:
                     print("A node cannot send money to itself. Transaction aborted.")
@@ -349,20 +357,44 @@ class Node:
                     print("Invalid amount. Amount must be a positive integer. Transaction aborted.")
                     continue
 
-                if amount > self.wallet.balance():  #aytos o elegxos ginetai kai metepeita sthn create_Transaction alla
-                                                    #mporei na mpei kai edw gia na mhn jalestei kan h create_transaction.
-                    print("Not enough money. Transaction aborted.")
-                    continue
+                # if amount > self.wallet.balance():  #aytos o elegxos ginetai kai metepeita sthn create_Transaction alla
+                #                                     #mporei na mpei kai edw gia na mhn jalestei kan h create_transaction.
+                #     print("Not enough money. Transaction aborted.")
+                #     continue
 
 
-                # if int(node_id) < 2: #na bgei auto!!!
-                receiver_public_key = self.network[node_id][0]
-                self.create_transaction(receiver_public_key, amount)
-
-
+                if int(node_id) < self.no_nodes: #na bgei auto!!!
+                    while True:
+                        response = requests.get(self.bootstrap_node_url + "/request_lock")
+                        if response.status_code == 200:
+                            print("TELIKA PHRA LOCK!!")
+                            if amount > self.wallet.balance():  # aytos o elegxos ginetai kai metepeita sthn create_Transaction alla
+                                # mporei na mpei kai edw gia na mhn jalestei kan h create_transaction.
+                                print("Not enough money. Transaction aborted.")
+                                response = requests.get(self.bootstrap_node_url + "/release_lock")
+                                if response.status_code == 400:
+                                    print("Cannot release lock!")
+                                break
+                            receiver_public_key = self.network[node_id][0]
+                            self.create_transaction(receiver_public_key, amount)
+                            counter+=1
+                            response = requests.get(self.bootstrap_node_url + "/release_lock")
+                            if response.status_code == 400:
+                                print("Cannot release lock!")
+                            break
+                        else:
+                            print("DEN PHRA LOCK")
+                            time.sleep(1)
+                #time.sleep(0.5)            #ISWS CREIAISTEIIII
                 #sel.network exei dict{id:[wallet_public_key, ip,port]}
         print("End of file transactions execution!")
+        time.sleep(5)
+        for block in self.blockchain.chain:
+            print(block.listOfTransactions)
+
         print(self.wallet.balance())
+        print("CHAIN LENGTH:", len(self.blockchain.chain))
+        print("PROCESSED TRANSACTIONS:", counter)
         return processed_transactions
 
     def send_block(self, node_url, mined_block, responses):
@@ -402,8 +434,11 @@ class Node:
             # else node mined a block and broadcast it to the network
             if mined_block is not None and mined_block.previousHash == self.blockchain.get_last_block_hash():
                 print("Nonce found.")
+                #self.block_lock.acquire()
                 self.blockchain.add_block(mined_block)
                 self.broadcast_block(mined_block)
+                #self.block_lock.release()
+
         self.is_mining = False
         if len(self.blockchain.get_unmined_transactions()) >= self.blockchain.capacity and not self.is_mining:
             self.is_mining = True
@@ -429,6 +464,8 @@ class Node:
         temp_incoming_block = Block(incoming_block.index, incoming_block.listOfTransactions,
                                     incoming_block.previousHash,
                                     incoming_block.nonce, incoming_block.timestamp)
+        print("TRANSACGTIONS IN BLOCK:", incoming_block.listOfTransactions)
+        print("TRANSACGTIONS IN BLOCK:", temp_block.listOfTransactions)
         print('HASHES EQUALITY {}'.format(temp_block.hash == incoming_block.hash))
         print('BLOCKS PREV HASH IS EQUAL WITH INCOMING BLOCK PREV HASH {}'.format(temp_block.previousHash == incoming_block.previousHash))
         print('BLOCKS NONCE IS EQUAL WITH INCOMING BLOCK NONCE {}'.format(temp_block.nonce == incoming_block.nonce))
@@ -453,6 +490,8 @@ class Node:
 
     def resolve_conflict(self):
         print('--------------RESOLVE CONFLICT-----------------------')
+        print(self.blockchain.chain)
+        #exit()
         threads = []
         responses = []
         for key, values in self.network.items():
