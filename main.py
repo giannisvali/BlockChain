@@ -34,7 +34,6 @@ def blockchain_length():
 def request_lock():
     # acquire lock before granting to the slave node
     if nodes_with_lock:
-        print("nodes with lock!!!", nodes_with_lock)
         return jsonify({'status': 'failure'}), 400
 
     transaction_lock.acquire()
@@ -45,7 +44,6 @@ def request_lock():
 def release_lock():
     # release lock after the slave node is finished
     if request.remote_addr not in nodes_with_lock:
-        print("remote addr not in nodes_with_lock!!!")
         return jsonify({'status': 'failure'}), 400
 
 
@@ -86,7 +84,6 @@ def get_specific_node():
 def find_wallet_public_key():
     details = request.json
     wallet_public_key = details['wallet_public_key']
-    print(wallet_public_key)
     for cur_key, cur_values in app.config['nodes_details'].items():
         if cur_values[0] == wallet_public_key:
             return jsonify({"details": app.config['nodes_details'][cur_key]}), 200
@@ -148,7 +145,7 @@ def reduce_transaction_output_id():
 
 @app.route('/receive-block', methods=['POST'])
 def receive_block():
-    print('------------------------- BLOCK RECEIVED -------------------------------------------------------------\n')
+    #print('------------------------- BLOCK RECEIVED -------------------------------------------------------------\n')
     #cur_node.block_lock.acquire()
     block_data = request.get_json(force = True)
     block_dict = dict(jsonpickle.decode(block_data))
@@ -189,7 +186,7 @@ def receive_block():
 
         return jsonify(response), 200
     else:
-        print('BLOCK REJECTED BECAUSE PREVIOUS HASH IS NOT THE SAME - MULTIPLE ARRIVALS')
+        #print('BLOCK REJECTED BECAUSE PREVIOUS HASH IS NOT THE SAME - MULTIPLE ARRIVALS')
         response = jsonify({'message': 'Block rejected from {} - previous hash not the same - second block received from simultaneous miner'.format(cur_node.id)})
         #cur_node.block_lock.release()
 
@@ -197,21 +194,16 @@ def receive_block():
 
 @app.route('/chain', methods=['GET'])
 def give_chain():
-    print('-----------------------------------GIVE CHAIN---------------------------------------------')
-    print(cur_node.blockchain.chain)
-    #exit()
+    #print('-----------------------------------GIVE CHAIN---------------------------------------------')
     response = jsonpickle.encode(cur_node.blockchain.chain, unpicklable=True)
     return jsonify(response), 200
 
 
 @app.route('/receive-network', methods=['POST'])
 def receive_network():
-    print("kanw receive to network", flush = True)
     data = request.json
     app.config['nodes_details'] = data['details']
     cur_node.set_network(app.config['nodes_details'])
-    print("APP CONFIG:", app.config['nodes_details'])
-
 
     cur_node.wallet.set_utxo(data['UTXOs'])
     chain = jsonpickle.decode(data['chain'])
@@ -237,9 +229,7 @@ def receive_network():
 
 def send_details_to_node(rest_nodes_details, cur_node_details):
     wallet_public_key, ip_address, port = cur_node_details
-    print(ip_address, port)
     temp_node_url = "http://" + ip_address + ":" + port
-    print("send_details_to_node", temp_node_url)
     time.sleep(0.01)
     response = requests.post(temp_node_url + '/receive-network', json=rest_nodes_details)
 
@@ -248,9 +238,7 @@ def send_details_to_node(rest_nodes_details, cur_node_details):
 
 @app.route('/update-network', methods=['POST'])
 def update_network():
-    print("kanw update to network")
     data = request.json
-
     app.config['nodes_details'][str(data["details"]['id'])] = (data["details"]['wallet_public_key'], data["details"]['ip_address'], data["details"]['port'])
     cur_node.set_network(app.config['nodes_details'])
     return jsonify({'status': 'success'})
@@ -262,7 +250,6 @@ def send_details_to_nodes(rest_nodes_details, cur_node_id, cur_node_details, new
     if str(cur_node_id) == str(new_node_details['id']):
         #time.sleep(1)
         temp_node_url = "http://" + new_node_details['ip_address'] + ":" + new_node_details['port']
-        print("send_details_to_node", temp_node_url)
 
         data = {"details": rest_nodes_details, "UTXOs": UTXOs, "chain": jsonpickle.encode(chain, unpicklable=True), "unmined_transactions": unmined_transactions}
         response = requests.post(temp_node_url + '/receive-network', json=data)
@@ -271,10 +258,7 @@ def send_details_to_nodes(rest_nodes_details, cur_node_id, cur_node_details, new
     else:
 
         wallet_public_key, ip_address, port = cur_node_details
-        print(ip_address, port)
         temp_node_url = "http://" + ip_address + ":" + port
-        print("send_details_to_node", temp_node_url)
-
         data = {"details": new_node_details}
 
         response = requests.post(temp_node_url + '/update-network', json=data)
@@ -288,7 +272,6 @@ def broadcast_nodes_details(UTXOs, chain, unmined_transactions, new_node_details
 
     for cur_key, cur_values in app.config['nodes_details'].items():
         if str(cur_key) != '0':
-            print("CUR KEYYY", cur_key, cur_values)
             temp_dict = {key: value for key, value in app.config['nodes_details'].items()}
             thread = threading.Thread(target=send_details_to_nodes, args=(temp_dict, cur_key, cur_values, new_node_details, UTXOs, chain, unmined_transactions, responses))
             threads.append(thread)
@@ -307,15 +290,13 @@ def broadcast_nodes_details(UTXOs, chain, unmined_transactions, new_node_details
 
 def initial_transaction(wallet_public_key):
 
-    print("wallet public key:", wallet_public_key)
     cur_node.create_transaction(wallet_public_key, 100)
 
-    print("teleiwsa ta initial transactions")
+    print("End of initial transactions.")
 
 
 @app.route('/receive-transactions-request', methods=['POST'])
 def receive_transactions_request():
-    print("kanw receive to transaction request")
     data = request.json
     processed_transactions = cur_node.execute_file_transactions(data['filepath'])
 
@@ -324,9 +305,7 @@ def receive_transactions_request():
 
 def send_transactions_request(node_id, cur_node_details, filepath, responses):
     wallet_public_key, ip_address, port = cur_node_details
-    print(ip_address, port)
     temp_node_url = "http://" + ip_address + ":" + port
-    print("send transaction request to node", temp_node_url)
     data = {"filepath": filepath}
     response = requests.post(temp_node_url + '/receive-transactions-request', json=data)
     responses.append((response, cur_node_details)) #ama theloume na printaroume mhnymata isws na baloume to node_id anti gia to cur_node_details
@@ -334,9 +313,9 @@ def send_transactions_request(node_id, cur_node_details, filepath, responses):
 
 @app.route('/calculate-block-time', methods=['GET'])
 def calculate_block_time():
-    print("kanw receive to transaction request")
     block_timestamps = cur_node.blockchain.block_timestamps
     data = request.json
+    print(block_timestamps)
 
     block_timestamps.insert(0, datetime.datetime.strptime(data['start_block_timestamp'], '%Y-%m-%dT%H:%M:%S.%f'))#.fromisoformat())
     timestamp_differences = []
@@ -344,8 +323,11 @@ def calculate_block_time():
         diff = block_timestamps[i + 1] - block_timestamps[i]  #calculate time difference
         timestamp_differences.append(diff.total_seconds())  #add difference to list
 
-    avg_diff = sum(timestamp_differences) / len(timestamp_differences)  #calculate average difference
-    print(f"Average time difference: {avg_diff:.4f} seconds")
+    if(len(timestamp_differences)):
+        avg_diff = sum(timestamp_differences) / len(timestamp_differences)  #calculate average difference
+    else:
+        avg_diff = sum(timestamp_differences)
+    #print(f"Average time difference: {avg_diff:.4f} seconds")
     return jsonify({'status': 'success', 'block_time': avg_diff})
 
 
@@ -360,7 +342,7 @@ def begin_transactions():
     threads = []
     responses = []
     path_base = "./" + str(cur_node.no_nodes) + "nodes/"
-    path_base = "./" + "10" + "nodes/" #na to diwxw auto metaaaa!~`!!
+    #path_base = "./" + "10" + "nodes/"
     start_time = time.perf_counter()
     start_block_timestamp = datetime.datetime.now()
 
@@ -375,7 +357,7 @@ def begin_transactions():
         thread.join()
 
     elapsed_time = time.perf_counter() - start_time
-    print("Elapsed time: {:.4f} seconds".format(elapsed_time))
+    #print("Elapsed time: {:.4f} seconds".format(elapsed_time))
 
     total_transactions = 0
     for resp, node_i in responses:
@@ -384,7 +366,7 @@ def begin_transactions():
 
         total_transactions+=resp.json()['processed_transactions']
 
-    print("Throughput: {:.4f} transactions per second".format(total_transactions/elapsed_time))
+    #print("Throughput: {:.4f} transactions per second".format(total_transactions/elapsed_time))
 
 
 
@@ -408,7 +390,7 @@ def begin_transactions():
 
     #Block time for each node is calculated. To find the global block time we just have to take the average block time for all the nodes,
 
-    print("Block time: {:.4f} seconds".format(total_block_time/len(responses)))
+    #print("Block time: {:.4f} seconds".format(total_block_time/len(responses)))
 
     with open('log_' + str(cur_node.no_nodes) + 'nodes.txt', 'w') as f:
         f.write("Elapsed time: {:.4f} seconds\n".format(elapsed_time))
@@ -416,8 +398,6 @@ def begin_transactions():
         f.write("Block time: {:.4f} seconds\n".format(total_block_time/len(responses)))
 
     print('Transactions were executed to all nodes successfully.')
-
-
 
 
 
@@ -431,7 +411,7 @@ def complete_network(new_node_details):
 
     app.config['node_counter'] += 1
     if app.config['node_counter'] == cur_node.no_nodes:
-        print("mazeythkame oloi!")
+        print("All nodes have arrived. Starting initial transactions.")
         begin_transactions()
 
 
@@ -443,11 +423,9 @@ def update_nodes_details(details):
 
 @app.route('/receive-details', methods=['POST'])
 def receive_details():
-    print("mphka sto receive details", flush = True)
     data = request.get_data()
     new_node_details = json.loads(data)
 
-    print(new_node_details)
     thread = threading.Thread(target=complete_network, args=([new_node_details]))
     thread.start()
 
@@ -456,17 +434,9 @@ def receive_details():
 
 @app.route('/receive-transaction', methods=['POST'])
 def receive_transaction():
-    # data = request.get_data()
-    # details = json.loads(data)
-    # print("transaction details:", details, flush = True)
-    transaction_details = request.json
-    print("transaction details:", transaction_details, flush = True)
-    # transaction_details['sender_address'] = transaction_details['sender_address'].encode('utf-8')
-    # transaction_details['recipient_address'] = transaction_details['recipient_address'].decode('utf-8')
-    #transaction_details['signature'] = transaction_details['signature'].decode('utf-8')
 
+    transaction_details = request.json
     return cur_node.validate_transaction(transaction_details)
-    # return jsonify({'status': 'success'})
 
 
 if __name__ == '__main__':
@@ -495,12 +465,11 @@ if __name__ == '__main__':
     difficulty = args.difficulty
     no_nodes = args.no_nodes
     app_port = args.app_port
-    print(no_nodes)
 
     global cur_node
     cur_node = Node(ip_address, port, bootstrap_ip_address, bootstrap_port, no_nodes, capacity, difficulty, blockchain_snapshot=None,
                 key_length=2048)
-    if ip_address == bootstrap_ip_address:
+    if ip_address == bootstrap_ip_address and bootstrap_port == port:
         bootstrap_details = {'id': cur_node.id,
                              # 'wallet_public_key': cur_node.wallet.get_public_key().decode('utf-8'),
                              'wallet_public_key': cur_node.wallet.get_public_key(),

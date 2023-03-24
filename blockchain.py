@@ -78,15 +78,3 @@ class Blockchain:
     def __str__(self):
         return (''.join(str(b) for b in self.chain))
 
-
-# if __name__ == '__main__':
-#     blockchain = Blockchain()
-#     # genesis block
-#     blockchain.add_block(Block(1,[00,80,99,99,11],'23hgf5'))
-#     for i in range(8):
-#         blockchain.add_transaction(i)
-#     block1 = blockchain.get_mined_block()
-#     blockchain.add_block(block1)
-#     blockchain.hash_exists_in_chain(block1.hash)
-#     print(blockchain)
-#     print(blockchain.transactions_unmined)

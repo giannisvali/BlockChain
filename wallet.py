@@ -44,7 +44,6 @@ class Wallet:
 
 
 	def set_utxo(self, utxo):
-		print("UTXO SET:", utxo)
 		for key, value in utxo.items():
 			temp_list = []
 			for item in value:

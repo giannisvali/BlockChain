@@ -35,7 +35,7 @@ class Block:
 
     def mine(self, difficulty, chain_length, chain):
         difficulty_zeros = '0' * difficulty
-        print('----------MINING STARTED------------------------\ninitial chain length {}'.format(chain_length))
+        #print('----------MINING STARTED------------------------\ninitial chain length {}'.format(chain_length))
         #print('mining started')
         # check if first difficulty characters of hash are zeros
         while self.hash[0:difficulty] != difficulty_zeros:
@@ -44,11 +44,11 @@ class Block:
             # compare initial chain length with current chain length
             # if chain length greater another node mined the block --> stop mining
             if chain_length < len(chain):
-                print('------------------MINING STOPPED------------------\nanother node mined the block')
+                #print('------------------MINING STOPPED------------------\nanother node mined the block')
                 return False #stopped
 
-        print('----------MINING FINISHED------------------------\nmining successful : finished with hash {} and nonce {}'.format(self.hash, self.nonce))
-        print('\n \n TRANSACTIONS MINED: {} \n \n'.format((str(''.join(str(x) for x in self.listOfTransactions)).encode('utf-8'))))
+        #print('----------MINING FINISHED------------------------\nmining successful : finished with hash {} and nonce {}'.format(self.hash, self.nonce))
+        #print('\n \n TRANSACTIONS MINED: {} \n \n'.format((str(''.join(str(x) for x in self.listOfTransactions)).encode('utf-8'))))
         return True #completed
 
     def to_dict(self):
