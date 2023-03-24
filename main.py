@@ -25,6 +25,11 @@ nodes_with_lock = []
 
 
 
+@app.route('/get-network', methods=['GET'])
+def get_network():
+    # acquire lock before granting to the slave node
+    return jsonify({'network': cur_node.network}), 200
+
 @app.route('/blockchain-length', methods=['GET'])
 def blockchain_length():
     # acquire lock before granting to the slave node
@@ -78,6 +83,16 @@ def get_specific_node():
         return jsonify({"node_details": None}), 404
 
     return jsonify({"node_details": app.config['nodes_details'][node_id]}), 200
+
+
+@app.route('/find-id')
+def find_id():
+    details = request.json
+    print(details["node_id"])
+    if str(details["node_id"]) in app.config['nodes_details']:
+        return jsonify({"wallet_public_key": app.config['nodes_details'][str(details["node_id"])][0]}), 200
+
+    return jsonify({"wallet_public_key": "Failure"}), 404
 
 
 @app.route('/find-wallet-public-key')

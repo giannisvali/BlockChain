@@ -31,21 +31,21 @@ x_labels = ("Capacity = 1\nDifficulty = 4", "Capacity = 1\nDifficulty = 5",
            "Capacity = 5\nDifficulty = 4", "Capacity = 5\nDifficulty = 5",
            "Capacity = 10\nDifficulty = 4", "Capacity = 10\nDifficulty = 5")
 
-values = {
-    'Five Nodes': [12.35, 12.35, 12.35, 12.35, 12.35,12.35],
-    'Ten Nodes': [8.79, 8.79, 8.79, 8.79, 8.79, 8.79]
+throughput_values = {
+    'Five Nodes': [4.6612, 10.8255, 11.7791, 5.2462, 8.1247, 9.6092],
+    'Ten Nodes': [5.4537, 9.5058, 8.9738, 5.1375, 7.8731, 9.1134]
 
 }
 y_label = "Throughput"
-grouped_bar_plot(x_labels, values, y_label)
+grouped_bar_plot(x_labels, throughput_values, y_label)
 
-values = {
-    'Five Nodes': [12.35, 12.35, 12.35, 12.35, 12.35,12.35],
-    'Ten Nodes': [8.79, 8.79, 8.79, 8.79, 8.79, 8.79]
+block_time_values = {
+    'Five Nodes': [0.3662, 1.1069, 2.9747, 3.7575, 10.0786, 12.6148],
+    'Ten Nodes': [0.2987, 1.1442, 2.2790, 1.9135, 7.6191, 11.5736]
 
 }
 y_label = "Block Time"
-grouped_bar_plot(x_labels, values, y_label)
+grouped_bar_plot(x_labels, block_time_values, y_label)
 
 
 

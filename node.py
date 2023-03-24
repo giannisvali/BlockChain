@@ -392,6 +392,7 @@ class Node:
             self.is_mining = True
             t = threading.Thread(target=self.mine_block)
             t.start()
+            #t.join()
 
     def validate_block(self, incoming_block):
         #print('----------------------------------------VALIDATE BLOCK----------------------------------------------')
@@ -421,6 +422,7 @@ class Node:
         # print('BLOCKS HASH IS EQUAL WITH INCOMING BLOCK HASH {}'.format(temp_block.hash == incoming_block.hash))
         # # compare expected hash to incoming block's hash, if True block is valid
         # print('REHASH EQUALITY  {}'.format(temp_incoming_block.hash == incoming_block.hash))
+
         # print('DIFFICULTY ZEROS CHECK {}'.format(temp_incoming_block.hash[0:self.blockchain.difficulty] == ('0' * self.blockchain.difficulty)))
         # print('\n-----------------------------------TRANSACTIONS TO MINE -------------------------------------------------\n')
         # print('TRANSACTIONS TO MINE {}'.format(str(''.join(str(x) for x in temp_block.listOfTransactions)).encode('utf-8')))

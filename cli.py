@@ -6,8 +6,10 @@ import ipaddress
 all_commands = {
     "node <node_id>" : "Selects the node with id <node_id>. The selection of the node is saved until a new execution of this command has occured.",
     "t <recipient_address> <amount>": "Sends <amount> NBC coins from the wallet of the selected node, to the wallet with <recipient_address> address.",
+    "nt <recipient_node_id> <amount>": "Sends <amount> NBC coins from the wallet of the selected node, to the wallet of the owner with <recipient_node_id> id.",
     "balance": "Shows the balance of the selected node's wallet.",
     "view": "Shows all the transactions of the latest validated block, of the whole noobcash blockchain.",
+    "exit": "Exits Noobcash client.",
     "help": "Explains the aforementioned commands."
 }
 
@@ -65,11 +67,13 @@ def view_transactions(cur_node_url):
     #                     'value': self.amount,
     #                     'signature': self.signature})
     for tr in transactions:
+        print(type(tr))
+        tr = json.loads(tr)
         # tr_dict = tr.items()
         # print(tr)
         # print(type(tr))
         # print(tr_dict)
-        print('------------------------- Transaction id {}-------------------------------\n'.format(tr["transaction_id"]))
+        #print('------------------------- Transaction id {}-------------------------------\n'.format(tr["transaction_id"]))
         print("Sender Address:", tr['sender_address'])
         print("Recipient Address:",tr['recipient_address'])
         print("Transaction Inputs:",tr['transaction_inputs'])
@@ -83,6 +87,17 @@ def view_transactions(cur_node_url):
         counter+=1
 
 print("Welcome to Noobcash client!")
+response = requests.get(bootstrap_node_url + '/get-network')
+if not check_status_code(response.status_code, 200):
+    exit("Could not retrieve network from bootstrap node!")
+
+network = response.json()['network']
+
+print("Network Details (Wallet public key, IP Address, Port)")
+for key, values in network.items():
+    print("\nNode " + key + ": ",  values)
+
+
 cur_node_id = None
 while(1):
     command = input("Type the command \"help\", to see the provided functionalities. Otherwise, proceed with the execution of a command:")
@@ -132,20 +147,33 @@ while(1):
         #     print("Invalid IPv4 address!")
         #     continue
 
-        if command[1] == cur_node_details[0]:
+        if command[1] == cur_node_id:
             print("A node cannot send money to itself. Transaction aborted.")
             continue
 
 
-        if not (command[2].isdigit() or float(command[2])>0.0):
+        if not (command[2].isdigit() or int(command[2])>0.0):
             print("Amount must be a positive number!")
             continue
+
+        response = requests.get(cur_node_url + '/balance')
+        if not check_status_code(response.status_code, 200):
+            print("Error with executing current command! Try again.")
+            continue
+
+        response = response.json()
+        balance = response['balance']
+
+        if balance < int(command[2]):
+            print("Not enough NBC for this transaction!")
+            continue
+
 
 
         wallet_public_key = command[1]
         NBC = command[2]
         details = {"wallet_public_key": wallet_public_key, "NBC": NBC}
-        response = requests.get(cur_node_url + '/find-wallet-public-key', json = details)
+        response = requests.get(bootstrap_node_url + '/find-wallet-public-key', json = details) #to eixa me cur_node_url
         if not check_status_code(response.status_code, 200):
             print("Wallet with public key", wallet_public_key, "does not exist in the network! Try a different wallet public key.")
             continue
@@ -162,12 +190,62 @@ while(1):
         #GENIKA NA DOUME AN THA DEXOMASTE KAI FLOATS WS AMOUNT STA TRANSACTIONS, OXI MONO EDW PANTOY STO PROGRAMMA GIATI TWRA SKAEI ME FLOATS
         #proeraitiko apla gia kalh praktikh isws prosthesoume merikes getter/setters functions.
 
+    elif command[0] == "nt" and len(command) == 3:
+        if cur_node_id is None:
+            print("No node is selected. You must first execute the command node <node_id>, to select a node.")
+            continue
+
+        if command[1] == cur_node_id:
+            print("A node cannot send money to itself. Transaction aborted.")
+            continue
+
+
+        if not (command[2].isdigit() or int(command[2])>0.0):
+            print("Amount must be a positive number!")
+            continue
+
+        response = requests.get(cur_node_url + '/balance')
+        if not check_status_code(response.status_code, 200):
+            print("Error with executing current command! Try again.")
+            continue
+
+        response = response.json()
+        balance = response['balance']
+
+        if balance < int(command[2]):
+            print("Not enough NBC for this transaction!")
+            continue
+
+
+        recipient_node_id = command[1]
+        NBC = command[2]
+        details = {"node_id": str(recipient_node_id)}
+        response = requests.get(bootstrap_node_url + '/find-id', json = details)
+        if not check_status_code(response.status_code, 200):
+            print("Node with id", recipient_node_id, "does not exist in the network! Try a different wallet public key.")
+            continue
+        response = response.json()
+
+        details = {"wallet_public_key": response['wallet_public_key'], "NBC": NBC}
+        response = requests.post(cur_node_url + '/create-client-transaction', json = details)
+
+        if not check_status_code(response.status_code, 201):
+            print("Transaction was not successful!")
+            continue
+
+        print("Successful transaction.")
+
+
     elif command[0] == "view" and len(command) == 1:
 
         view_transactions(bootstrap_node_url)
 
 
     elif command[0] == "chainlength" and len(command) == 1:
+
+        if cur_node_id is None:
+            print("No node is selected. You must first execute the command node <node_id>, to select a node.")
+            continue
 
         response = requests.get(cur_node_url + '/blockchain-length')
         if not check_status_code(response.status_code, 200):
@@ -177,8 +255,13 @@ while(1):
         print("Blockchain length of current node:", response['length'])
 
 
+    elif command[0] == "exit" and len(command) == 1:
+        exit("Noobcash client Ending...")
+
     else:
         print("Wrong command! Try again.")
+
+    time.sleep(0.1)
 
 
 
